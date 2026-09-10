@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1026">
+<title>Mausam — Personalized Weather Intelligence</title>
+<style>
+  :root{
+    --bg:#0b1026; --bg2:#101735; --card:rgba(255,255,255,.06); --card2:rgba(255,255,255,.09);
+    --border:rgba(255,255,255,.12); --text:#eef1ff; --muted:#9aa3c7; --faint:#6b74a0;
+    --accent:#ffb347; --accent2:#ff7a45; --blue:#5aa2ff; --green:#3ddc84; --yellow:#ffd23f;
+    --orange:#ff9142; --red:#ff5d5d; --purple:#b18cff;
+    --radius:20px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(255,122,69,.16), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(90,162,255,.14), transparent 55%),
+      var(--bg);
+    color:var(--text); min-height:100vh;
+  }
+  #phone{max-width:430px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; padding-bottom:calc(76px + env(safe-area-inset-bottom));}
+  .screen{display:none; flex:1; flex-direction:column;}
+  .screen.active{display:flex;}
+  h1,h2,h3,h4{margin:0; font-weight:700;}
+  p{margin:0;}
+  button{font-family:inherit;}
+  .muted{color:var(--muted);} .faint{color:var(--faint);}
+  .row{display:flex; align-items:center; gap:10px;}
+  .between{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .mt8{margin-top:8px;} .mt12{margin-top:12px;} .mt16{margin-top:16px;} .mt24{margin-top:24px;}
+
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-badge{
+    width:38px;height:38px;border-radius:12px; display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); font-size:20px;
+    box-shadow:0 6px 18px rgba(255,138,61,.35);
+  }
+  .brand-name{font-size:19px; font-weight:800; letter-spacing:.14em;}
+  .brand-tag{font-size:10.5px; color:var(--muted); letter-spacing:.02em; margin-top:1px;}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 18px 8px;}
+  .loc-btn{
+    display:flex; align-items:center; gap:8px; border:1px solid var(--border); background:var(--card);
+    color:var(--text); padding:8px 14px; border-radius:999px; font-size:13.5px; font-weight:600; max-width:64%; cursor:pointer;
+  }
+  .loc-btn span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .iconbtn{
+    width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--card);
+    color:var(--text); font-size:16px; display:flex;align-items:center;justify-content:center; cursor:pointer;
+  }
+  .iconbtn:active{transform:scale(.94);}
+  .iconbtn.spinning{animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .hero{padding:18px 18px 4px; text-align:left;}
+  .greeting{font-size:15px; color:var(--muted);}
+  .hero-temp{font-size:76px; font-weight:800; line-height:1.05; letter-spacing:-2px; margin-top:2px;}
+  .hero-temp sup{font-size:30px; font-weight:700; vertical-align:super; color:var(--accent);}
+  .hero-cond{font-size:16.5px; font-weight:600; margin-top:2px; display:flex; align-items:center; gap:8px;}
+  .hero-cond .wx-ico{font-size:22px;}
+  .feels{font-size:13px; color:var(--muted); margin-top:6px;}
+  .sunline{font-size:12px; color:var(--faint); margin-top:3px;}
+
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:14px 18px 2px;}
+  .metric{
+    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px 12px 10px;
+    display:flex; flex-direction:column; gap:3px; cursor:pointer;
+  }
+  .metric:active{background:var(--card2);}
+  .metric .k{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); font-weight:700;}
+  .metric .v{font-size:19px; font-weight:750;}
+  .metric .s{font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; align-self:flex-start; margin-top:3px;}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px;}
+  .section{padding:0 18px; margin-top:16px;}
+  .section-title{display:flex; align-items:center; justify-content:space-between; padding:0 2px 8px;}
+  .section-title h3{font-size:14.5px; letter-spacing:.01em;}
+  .section-title .sub{font-size:11.5px; color:var(--faint);}
+
+  .alert{
+    margin:14px 18px 0; border-radius:var(--radius); padding:14px 16px; cursor:pointer;
+    background:linear-gradient(135deg, rgba(255,93,93,.2), rgba(255,145,66,.12));
+    border:1px solid rgba(255,93,93,.45);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  .alert.caution{
+    background:linear-gradient(135deg, rgba(255,210,63,.16), rgba(255,145,66,.10));
+    border-color:rgba(255,210,63,.4); animation:none;
+  }
+  .alert.level-yellow{background:linear-gradient(135deg, rgba(255,210,63,.18), rgba(255,210,63,.06)); border-color:rgba(255,210,63,.5); animation:none;}
+  .alert.level-orange{background:linear-gradient(135deg, rgba(255,145,66,.22), rgba(255,145,66,.08)); border-color:rgba(255,145,66,.55); animation:pulse 2.4s ease-in-out infinite;}
+  .alert.level-red,.alert.disaster{background:linear-gradient(135deg, rgba(255,61,61,.26), rgba(255,93,93,.1)); border-color:rgba(255,61,61,.65); animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,93,93,.22);} 50%{box-shadow:0 0 0 7px rgba(255,93,93,0);}}
+  .alert-head{display:flex; align-items:center; gap:8px; font-weight:800; font-size:14.5px; flex-wrap:wrap;}
+  .alert-head .tag{font-size:10px; letter-spacing:.1em; background:rgba(255,93,93,.25); padding:3px 8px; border-radius:999px; font-weight:800;}
+  .alert.caution .tag,.alert.level-yellow .tag{background:rgba(255,210,63,.22);}
+  .alert.level-orange .tag{background:rgba(255,145,66,.28);}
+  .alert-head .src{font-size:9.5px; letter-spacing:.08em; color:var(--faint); border:1px solid var(--border); padding:2px 7px; border-radius:999px; font-weight:800;}
+  .alert-body{font-size:13.5px; line-height:1.5; margin-top:7px; color:var(--text);}
+  .alert-cta{font-size:11.5px; color:var(--muted); margin-top:8px; font-weight:600;}
+
+  .timeline{display:flex; flex-direction:column; gap:10px;}
+  .insight{
+    display:flex; gap:12px; align-items:flex-start; background:var(--card); border:1px solid var(--border);
+    border-radius:18px; padding:13px 14px; cursor:pointer; transition:background .15s;
+  }
+  .insight:active{background:var(--card2);}
+  .insight .ico{
+    width:40px;height:40px;border-radius:13px; display:flex;align-items:center;justify-content:center;
+    font-size:20px; flex-shrink:0; background:rgba(255,255,255,.07);
+  }
+  .insight .ico.warn{background:rgba(255,93,93,.16);}
+  .insight .ico.caution{background:rgba(255,210,63,.14);}
+  .insight .ico.good{background:rgba(61,220,132,.14);}
+  .insight .ico.info{background:rgba(90,162,255,.14);}
+  .insight .body{flex:1; min-width:0;}
+  .insight .when{font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--faint); text-transform:uppercase;}
+  .insight .title{font-size:14.5px; font-weight:650; margin-top:2px; line-height:1.35;}
+  .insight .who{display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:11px; color:var(--muted); background:rgba(255,255,255,.06); border:1px solid var(--border); padding:3px 9px; border-radius:999px;}
+  .insight .why-hint{font-size:10.5px; color:var(--accent); margin-top:6px; font-weight:700; letter-spacing:.03em;}
+
+  .hourly-strip{display:flex; gap:8px; overflow-x:auto; padding:2px 18px 8px; scrollbar-width:none;}
+  .hourly-strip::-webkit-scrollbar{display:none;}
+  .hour-chip{
+    min-width:72px; background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:11px 8px; text-align:center; flex-shrink:0;
+  }
+  .hour-chip.now{background:linear-gradient(160deg, rgba(255,179,71,.22), rgba(255,122,69,.12)); border-color:rgba(255,179,71,.5);}
+  .hour-chip .h{font-size:10.5px; color:var(--muted); font-weight:700;}
+  .hour-chip .i{font-size:19px; margin:5px 0 3px;}
+  .hour-chip .t{font-size:14px; font-weight:750;}
+  .hour-chip .r{font-size:10px; color:var(--blue); font-weight:700; margin-top:3px;}
+
+  table.fc{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.fc th{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); text-align:left; padding:6px 4px; font-weight:800;}
+  table.fc td{padding:9px 4px; border-top:1px solid var(--border);}
+  table.fc td.num{font-weight:700;}
+  .rainbar{height:5px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden; width:64px;}
+  .rainbar i{display:block; height:100%; background:linear-gradient(90deg,var(--blue),#7cc4ff); border-radius:99px;}
+  .day-row{display:flex; align-items:center; gap:12px; padding:11px 2px; border-top:1px solid var(--border);}
+  .day-row .d{width:52px; font-weight:700; font-size:13.5px;}
+  .day-row .i{font-size:20px; width:30px; text-align:center;}
+  .day-row .cond{flex:1; font-size:12.5px; color:var(--muted); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .day-row .temps{font-size:13.5px; font-weight:700; white-space:nowrap;}
+  .day-row .temps .lo{color:var(--muted); font-weight:600;}
+  .day-row .rainp{font-size:11px; color:var(--blue); font-weight:700; width:40px; text-align:right;}
+
+  /* ---------- Schedule ---------- */
+  .sched-ev{
+    display:flex; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:18px;
+    padding:13px 14px; cursor:pointer; align-items:flex-start;
+  }
+  .sched-ev.past{opacity:.5;}
+  .sched-ev.next{border-color:rgba(255,179,71,.55); background:linear-gradient(160deg, rgba(255,179,71,.1), var(--card));}
+  .sched-ev .tcol{text-align:center; flex-shrink:0; width:58px;}
+  .sched-ev .tcol .hh{font-size:15px; font-weight:800;}
+  .sched-ev .tcol .mm{font-size:9.5px; color:var(--faint); font-weight:700; letter-spacing:.06em;}
+  .sched-ev .tcol .line{width:2px; height:18px; background:var(--border); margin:5px auto 0; border-radius:2px;}
+  .sched-ev .body{flex:1; min-width:0;}
+  .sched-ev .title{font-size:14.5px; font-weight:700;}
+  .sched-ev .verdict{font-size:12.5px; margin-top:4px; line-height:1.45; color:var(--muted);}
+  .sched-ev .verdict b.warn{color:var(--red);} .sched-ev .verdict b.ok{color:var(--green);}
+  .sched-ev .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px;}
+  .chip{font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.07); border:1px solid var(--border); color:var(--muted);}
+  .chip.rainy{color:var(--blue); border-color:rgba(90,162,255,.4);}
+  .chip.hot{color:var(--orange); border-color:rgba(255,145,66,.4);}
+  .chip.uvhi{color:var(--yellow); border-color:rgba(255,210,63,.4);}
+  .chip.wet{color:var(--red); border-color:rgba(255,93,93,.4);}
+  .del-ev{background:none; border:none; color:var(--faint); font-size:15px; cursor:pointer; padding:2px 4px;}
+  .sched-form{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .sched-form input,.sched-form select{
+    background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:12px; padding:11px 12px;
+    color:var(--text); font-size:13px; outline:none; font-family:inherit;
+  }
+  .sched-form input{flex:1; min-width:140px;}
+  .mini-cta{
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#20130a; border:none; border-radius:12px;
+    padding:11px 16px; font-weight:800; font-size:13px; cursor:pointer;
+  }
+
+  /* ---------- Settings / sources ---------- */
+  .set-row{display:flex; align-items:center; gap:12px; padding:13px 2px; border-top:1px solid var(--border); cursor:pointer;}
+  .set-row:first-child{border-top:none;}
+  .set-row .em{font-size:19px; width:26px; text-align:center;}
+  .set-row .tx{flex:1; font-size:14px; font-weight:600;}
+  .set-row .arr{color:var(--faint);}
+  .set-head{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:800; padding:14px 2px 6px;}
+  .switchrow{display:flex; align-items:center; gap:12px; padding:11px 2px; border-top:1px solid var(--border);}
+  .switchrow .tx{flex:1; font-size:13.5px; font-weight:600;}
+  .switchrow .sub{font-size:11px; color:var(--faint); font-weight:500;}
+  .switch{position:relative; width:42px; height:24px; flex-shrink:0; cursor:pointer;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:rgba(255,255,255,.14); border-radius:99px; transition:.2s;}
+  .slider:before{content:""; position:absolute; width:18px; height:18px; border-radius:50%; left:3px; top:3px; background:#fff; transition:.2s;}
+  .switch input:checked + .slider{background:var(--accent);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+  .src-row{display:flex; gap:11px; padding:11px 0; border-top:1px solid var(--border); align-items:flex-start;}
+  .src-row:first-child{border-top:none;}
+  .src-row .em{font-size:17px; width:24px; text-align:center; margin-top:1px;}
+  .src-row .tx{flex:1; min-width:0;}
+  .src-row .nm{font-size:13px; font-weight:700;}
+  .src-row .ds{font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.45;}
+  .badge{font-size:9px; font-weight:900; letter-spacing:.09em; padding:3px 8px; border-radius:999px; margin-left:6px; vertical-align:1px;}
+  .badge.live{background:rgba(61,220,132,.16); color:var(--green);}
+  .badge.sample{background:rgba(255,210,63,.15); color:var(--yellow);}
+  .pipe{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px; line-height:1.5; color:var(--muted);
+    background:rgba(0,0,0,.25); border:1px solid var(--border); border-radius:14px; padding:12px; white-space:pre; overflow-x:auto;
+  }
+
+  /* ---------- Onboarding ---------- */
+  #onboarding{justify-content:flex-start; padding:34px 22px 30px;}
+  .ob-logo{display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:8px;}
+  .ob-logo .brand-badge{width:64px;height:64px;border-radius:20px;font-size:34px; box-shadow:0 10px 30px rgba(255,138,61,.4);}
+  .ob-title{font-size:30px; font-weight:800; letter-spacing:.2em; margin-top:4px;}
+  .ob-sub{font-size:13.5px; color:var(--muted); text-align:center; line-height:1.55; margin-top:10px;}
+  .ob-label{font-size:13.5px; font-weight:800; margin:26px 0 12px; display:flex; align-items:center; gap:8px;}
+  .ob-label small{font-weight:600; color:var(--faint); font-size:11px;}
+  .interests{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .interest{
+    display:flex; align-items:center; gap:9px; padding:12px 12px; border-radius:15px; cursor:pointer;
+    background:var(--card); border:1.5px solid var(--border); transition:all .15s; font-size:13px; font-weight:650;
+  }
+  .interest .em{font-size:17px;}
+  .interest .box{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--faint); margin-left:auto; flex-shrink:0; display:flex;align-items:center;justify-content:center; font-size:11px; color:#0b1026; font-weight:900;}
+  .interest.sel{border-color:var(--accent); background:rgba(255,179,71,.1);}
+  .interest.sel .box{background:var(--accent); border-color:var(--accent);}
+  .travelmodes{display:grid; grid-template-columns:repeat(3,1fr); gap:9px;}
+  .mode{
+    display:flex; flex-direction:column; align-items:center; gap:5px; padding:13px 6px; border-radius:15px; cursor:pointer;
+    background:var(--card); border:1.5px solid var(--border); font-size:11.5px; font-weight:650; text-align:center; transition:all .15s;
+  }
+  .mode .em{font-size:21px;}
+  .mode.sel{border-color:var(--accent); background:rgba(255,179,71,.1);}
+  .cta{
+    margin-top:30px; width:100%; padding:16px; border:none; border-radius:16px; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#20130a; font-size:15.5px; font-weight:800; letter-spacing:.02em;
+    box-shadow:0 8px 24px rgba(255,138,61,.35);
+  }
+  .cta:disabled{opacity:.35; box-shadow:none; cursor:not-allowed;}
+  .cities{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+  .city-chip{font-size:12px; padding:8px 13px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); cursor:pointer; font-weight:600;}
+  .city-chip:active{background:var(--card2);}
+  .saveslots{display:flex; gap:8px; margin-top:10px;}
+  .saveslot{flex:1; font-size:11.5px; padding:9px 6px; border-radius:12px; background:var(--card); border:1.5px solid var(--border); color:var(--muted); cursor:pointer; font-weight:700; text-align:center;}
+  .saveslot.saved{border-color:var(--green); color:var(--green);}
+
+  /* ---------- Tab bar ---------- */
+  .tabbar{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; z-index:40;
+    background:rgba(13,18,42,.92); backdrop-filter:blur(14px); border-top:1px solid var(--border);
+    display:flex; padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  .tab{flex:1; background:none; border:none; color:var(--faint); font-size:9.5px; font-weight:700; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 0; cursor:pointer;}
+  .tab .em{font-size:19px; filter:grayscale(1); opacity:.65;}
+  .tab.active{color:var(--accent);}
+  .tab.active .em{filter:none; opacity:1;}
+
+  /* ---------- Modals ---------- */
+  .modal-bg{position:fixed; inset:0; background:rgba(5,8,20,.7); backdrop-filter:blur(4px); z-index:80; display:none; align-items:flex-end; justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal{
+    width:100%; max-width:430px; background:#141b3d; border-radius:24px 24px 0 0; border-top:1px solid var(--border);
+    padding:20px 20px calc(24px + env(safe-area-inset-bottom)); max-height:80vh; overflow-y:auto; animation:slideUp .22s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(40px); opacity:.4;} to{transform:none; opacity:1;}}
+  .modal h3{font-size:17px;}
+  .grabber{width:44px;height:4.5px;border-radius:99px;background:rgba(255,255,255,.22); margin:0 auto 16px;}
+  .why-step{display:flex; gap:11px; margin-top:14px;}
+  .why-step .n{width:24px;height:24px;border-radius:99px; background:rgba(255,179,71,.16); color:var(--accent); font-size:12px; font-weight:800; display:flex;align-items:center;justify-content:center; flex-shrink:0; margin-top:1px;}
+  .why-step .tx{font-size:13.5px; line-height:1.55; color:#d7dcf5;}
+  .why-step .tx b{color:var(--text);}
+  .why-data{margin-top:16px; background:rgba(90,162,255,.08); border:1px solid rgba(90,162,255,.25); border-radius:14px; padding:12px 14px; font-size:12.5px; line-height:1.7; color:var(--muted);}
+  .why-data b{color:var(--blue);}
+
+  .loc-item{display:flex; align-items:center; gap:12px; padding:13px 6px; border-top:1px solid var(--border); cursor:pointer;}
+  .loc-item:first-of-type{border-top:none;}
+  .loc-item .em{font-size:20px; width:28px; text-align:center;}
+  .loc-item .tx{flex:1;}
+  .loc-item .nm{font-size:14.5px; font-weight:700;}
+  .loc-item .sub{font-size:11.5px; color:var(--faint);}
+  .loc-item .cur{font-size:9.5px; font-weight:900; letter-spacing:.08em; color:var(--green);}
+  .loc-search{display:flex; gap:8px; margin-top:6px;}
+  .loc-search input{flex:1; background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:12px; padding:11px 13px; color:var(--text); font-size:13.5px; outline:none; font-family:inherit;}
+
+  .notif-dot{position:relative;}
+  .notif-dot::after{content:attr(data-count);position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:8.5px;font-weight:900;min-width:15px;height:15px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+  .notif-dot[data-count="0"]::after{display:none;}
+  .stale-badge{margin:10px 18px 0;display:flex;align-items:center;gap:10px;background:rgba(255,210,63,.1);border:1px dashed rgba(255,210,63,.45);border-radius:14px;padding:10px 14px;font-size:12px;color:var(--muted);}
+  .stale-badge b{color:var(--yellow);}
+  .stale-badge button{margin-left:auto;background:rgba(255,210,63,.15);border:1px solid rgba(255,210,63,.4);color:var(--yellow);font-weight:800;font-size:11.5px;padding:6px 12px;border-radius:999px;cursor:pointer;flex-shrink:0;}
+  .error-card{margin:14px 18px 0;border-radius:var(--radius);padding:18px;background:rgba(255,93,93,.12);border:1px solid rgba(255,93,93,.4);text-align:center;}
+  .inbox-item{display:flex;gap:11px;padding:12px 4px 12px 10px;border-top:1px solid var(--border);cursor:pointer;align-items:flex-start;border-left:3px solid transparent;border-radius:4px;}
+  .inbox-item:first-child{border-top:none;}
+  .inbox-item:active{background:var(--card2);}
+  .inbox-item .em{font-size:18px;width:24px;text-align:center;margin-top:1px;}
+  .inbox-item .tx{flex:1;min-width:0;}
+  .inbox-item .nm{font-size:13.5px;font-weight:700;}
+  .inbox-item .ds{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
+  .inbox-item .when{font-size:10px;color:var(--faint);font-weight:700;margin-top:4px;}
+  .inbox-item .ack{width:9px;height:9px;border-radius:50%;background:var(--accent);margin-top:7px;flex-shrink:0;}
+  .inbox-item.acked{opacity:.6;}
+  .inbox-item.acked .ack{background:transparent;border:1px solid var(--faint);}
+
+  .toast{position:fixed; left:50%; bottom:96px; transform:translateX(-50%); background:#1c2350; border:1px solid var(--border); color:var(--text); font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:999px; z-index:90; opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap; max-width:88vw; overflow:hidden; text-overflow:ellipsis;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="phone">
+
+  <!-- ================= ONBOARDING ================= -->
+  <section id="onboarding" class="screen active">
+    <div class="ob-logo">
+      <div class="brand-badge">🌤️</div>
+      <div class="ob-title">MAUSAM</div>
+    </div>
+    <p class="ob-sub">Your personalized weather-intelligence dashboard.<br>Weather + alerts + your schedule → advice for <i>your</i> day.</p>
+
+    <div class="ob-label">📍 Your location <small>(search city / PIN / use GPS)</small></div>
+    <div class="card" style="padding:12px;">
+      <div class="loc-search">
+        <input id="citySearch" type="text" placeholder="City or PIN code…">
+        <button class="iconbtn" id="gpsBtn" title="Use my GPS" style="width:44px;">🎯</button>
+      </div>
+      <div class="cities" id="cityChips"></div>
+      <div class="saveslots" id="saveSlots" style="display:none;">
+        <button class="saveslot" data-slot="Home">🏠 Save as Home</button>
+        <button class="saveslot" data-slot="College">🎓 College</button>
+        <button class="saveslot" data-slot="Family">👨‍👩‍👧 Family</button>
+      </div>
+    </div>
+
+    <div class="ob-label">What matters to you? <small>(pick any)</small></div>
+    <div class="interests" id="interestGrid"></div>
+
+    <div class="ob-label">How do you usually travel? <small>(required)</small></div>
+    <div class="travelmodes" id="modeGrid"></div>
+
+    <button id="startBtn" class="cta" disabled>Start my Mausam →</button>
+  </section>
+
+  <!-- ================= HOME ================= -->
+  <section id="home" class="screen">
+    <div class="topbar">
+      <button class="loc-btn" id="locBtn">📍 <span id="locName">Loading…</span></button>
+      <div class="row" style="gap:8px;">
+        <button class="iconbtn" id="refreshBtn" title="Refresh">⟳</button>
+        <button class="iconbtn notif-dot" id="historyBtn" title="Alert history" data-count="0">🕘</button>
+        <button class="iconbtn" id="profileBtn" title="Personalization">👤</button>
+      </div>
+    </div>
+
+    <div id="staleSlot"></div>
+    <div id="alertSlot"></div>
+
+    <div class="hero">
+      <div class="greeting" id="greeting">Good morning</div>
+      <div class="hero-temp"><span id="curTemp">--</span><sup>°C</sup></div>
+      <div class="hero-cond"><span class="wx-ico" id="curIco">⛅</span><span id="curCond">—</span></div>
+      <div class="feels" id="feelsLine">—</div>
+      <div class="sunline" id="sunLine"></div>
+    </div>
+
+    <div class="grid" id="metricGrid">
+      <div class="metric" id="m-rain"><div class="k">Rain</div><div class="v" id="v-rain">--%</div><div class="s" id="s-rain"></div></div>
+      <div class="metric" id="m-uv"><div class="k">UV Index</div><div class="v" id="v-uv">--</div><div class="s" id="s-uv"></div></div>
+      <div class="metric" id="m-aqi"><div class="k">AQI (CPCB)</div><div class="v" id="v-aqi">--</div><div class="s" id="s-aqi">—</div></div>
+      <div class="metric" id="m-pm"><div class="k">PM2.5 / PM10</div><div class="v" id="v-pm" style="font-size:14.5px;">—</div><div class="s" id="s-pm">µg/m³</div></div>
+      <div class="metric" id="m-hum"><div class="k">Humidity</div><div class="v" id="v-hum">--%</div><div class="s" id="s-hum">Comfort</div></div>
+      <div class="metric" id="m-wind"><div class="k">Wind</div><div class="v" id="v-wind">--</div><div class="s" id="s-wind">km/h</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h3>Today's forecast</h3><span class="sub" id="fcUpdate"></span></div>
+      <div class="hourly-strip" id="hourlyStrip"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h3>Your day</h3><span class="sub">✨ weather + schedule + profile</span></div>
+      <div class="timeline" id="dayTimeline"></div>
+      <p class="faint" style="font-size:11px; padding:10px 2px 0;">Tap any card to see <b style="color:var(--accent)">why</b> you're seeing it.</p>
+    </div>
+  </section>
+
+  <!-- ================= SCHEDULE ================= -->
+  <section id="schedule" class="screen">
+    <div class="topbar"><h3 style="font-size:18px;">My schedule</h3><button class="iconbtn" id="refreshBtn3">⟳</button></div>
+    <div class="section" style="margin-top:4px;">
+      <p class="faint" style="font-size:12px; padding:0 2px;">Mausam merges your timetable with the hour-by-hour forecast — tap an event for the full reasoning.</p>
+    </div>
+    <div class="section">
+      <div class="timeline" id="schedList"></div>
+    </div>
+    <div class="section">
+      <div class="card" style="padding:14px;">
+        <div style="font-size:12px; font-weight:800; letter-spacing:.06em; color:var(--faint);">ADD AN EVENT</div>
+        <div class="sched-form">
+          <select id="evTime"></select>
+          <input id="evTitle" type="text" placeholder="e.g. Lab, Cricket, Market…">
+        </div>
+        <div class="sched-form">
+          <select id="evType">
+            <option value="indoor">🏠 Indoor / class</option>
+            <option value="outdoor">🏞️ Outdoor activity</option>
+            <option value="travel">🧳 Travel / commute</option>
+          </select>
+          <button class="mini-cta" id="evAdd" style="flex:1;">＋ Add to my day</button>
+        </div>
+      </div>
+      <p class="faint" style="font-size:11px; padding:10px 2px 0;">Demo timetable included for the prototype — real calendar sync (Google / college ERP) is on the roadmap.</p>
+    </div>
+  </section>
+
+  <!-- ================= FORECAST ================= -->
+  <section id="forecast" class="screen">
+    <div class="topbar"><h3 style="font-size:18px;">Forecast</h3><button class="iconbtn" id="refreshBtn2">⟳</button></div>
+    <div class="section">
+      <div class="section-title"><h3>Hourly — today</h3><span class="sub">time · temp · rain</span></div>
+      <div class="card" style="padding:10px 14px;"><table class="fc" id="hourlyTable"></table></div>
+    </div>
+    <div class="section">
+      <div class="section-title"><h3>Next 7 days</h3></div>
+      <div class="card" style="padding:4px 14px;" id="dailyList"></div>
+    </div>
+  </section>
+
+  <!-- ================= SETTINGS ================= -->
+  <section id="settings" class="screen">
+    <div class="topbar"><h3 style="font-size:18px;">You & data</h3></div>
+    <div class="section">
+      <div class="card" style="padding:6px 16px;">
+        <div class="set-head">Profile</div>
+        <div class="set-row" id="setLoc"><span class="em">📍</span><span class="tx" id="setLocName">—</span><span class="arr">›</span></div>
+        <div class="set-row" id="setInterests"><span class="em">✅</span><span class="tx" id="setInterestVal">—</span><span class="arr">›</span></div>
+        <div class="set-row" id="setMode"><span class="em">🚌</span><span class="tx" id="setModeVal">—</span><span class="arr">›</span></div>
+        <div class="set-row" id="setSched"><span class="em">🗓️</span><span class="tx" id="setSchedVal">—</span><span class="arr">›</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="card" style="padding:6px 16px;">
+        <div class="set-head">🔔 Notification preferences</div>
+        <div id="notifRows"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title"><h3>Live data pipeline</h3><span class="sub" id="pipeStamp"></span></div>
+      <div class="card" style="padding:6px 16px;" id="sourcesList"></div>
+      <pre class="pipe" id="pipeDiagram"></pre>
+    </div>
+    <div class="section">
+      <button class="card" id="redoOnboard" style="width:100%; cursor:pointer; color:var(--accent); font-weight:700; font-size:14px; background:rgba(255,179,71,.08); border-color:rgba(255,179,71,.35);">↺ Redo personalization setup</button>
+    </div>
+  </section>
+
+  <!-- ================= TAB BAR ================= -->
+  <nav class="tabbar" id="tabbar" style="display:none;">
+    <button class="tab active" data-screen="home"><span class="em">🏠</span>Home</button>
+    <button class="tab" data-screen="schedule"><span class="em">🗓️</span>Schedule</button>
+    <button class="tab" data-screen="forecast"><span class="em">📅</span>Forecast</button>
+    <button class="tab" data-screen="settings"><span class="em">⚙️</span>You</button>
+  </nav>
+</div>
+
+<!-- ================= WHY MODAL ================= -->
+<div class="modal-bg" id="whyModal">
+  <div class="modal">
+    <div class="grabber"></div>
+    <h3 id="whyTitle">Why am I seeing this?</h3>
+    <div id="whyBody"></div>
+    <button class="cta" style="margin-top:20px; padding:13px;" onclick="document.getElementById('whyModal').classList.remove('open')">Got it</button>
+  </div>
+</div>
+
+<!-- ================= LOCATION MODAL ================= -->
+<div class="modal-bg" id="locModal">
+  <div class="modal">
+    <div class="grabber"></div>
+    <h3>Saved locations</h3>
+    <div id="locList"></div>
+    <div class="loc-search mt16">
+      <input id="locSearchInput" type="text" placeholder="Add city or PIN code…">
+      <button class="iconbtn" id="locGpsBtn" title="Use GPS" style="width:44px;">🎯</button>
+    </div>
+    <div class="cities" id="locSearchChips"></div>
+    <p class="faint" style="font-size:11px; margin-top:10px;">GPS uses device location · search supports cities & PIN codes (MausamGram-style locality lookup)</p>
+    <button class="cta" style="margin-top:18px; padding:13px;" onclick="document.getElementById('locModal').classList.remove('open')">Done</button>
+  </div>
+</div>
+
+<!-- ================= ALERT INBOX MODAL ================= -->
+<div class="modal-bg" id="inboxModal">
+  <div class="modal">
+    <div class="grabber"></div>
+    <h3>Alert history</h3>
+    <p class="faint" style="font-size:11.5px; margin-top:4px;">Every warning Mausam raised for you — official sources first. Tap to review the reasoning.</p>
+    <div id="inboxList"></div>
+    <button class="cta" style="margin-top:18px; padding:13px;" onclick="document.getElementById('inboxModal').classList.remove('open')">Done</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   MAUSAM — data architecture
+   [IMD APIs] [NDMA SACHET] [Open-Meteo WX/AQ/Archive]   ← sources
+        ↓               ↓              ↓
+   [Connectors: live call → calibrated sample fallback]
+        ↓
+   [Data Processing]  → AQI(CPCB) · UV windows · disaster flags · rain-risk model
+        ↓
+   [Personalization Engine]  ← location + schedule + preferences + travel mode
+        ↓
+   [MAUSAM HOME]  alerts · insights · recommendations
+   ===================================================================== */
+
+// ---------- Static config ----------
+const INTERESTS = [
+  {id:"outdoor",  em:"🏞️", label:"Outdoor activities"},
+  {id:"travel",   em:"🧳", label:"Travel"},
+  {id:"health",   em:"❤️", label:"Health"},
+  {id:"agri",     em:"🌾", label:"Agriculture"},
+  {id:"work",     em:"💼", label:"Education / work"},
+  {id:"air",      em:"😷", label:"Air quality"},
+  {id:"rain",     em:"☔", label:"Rain alerts"},
+];
+const MODES = [
+  {id:"walk",   em:"🚶", label:"Walking"},
+  {id:"cycle",  em:"🚴", label:"Bicycle"},
+  {id:"bike",   em:"🏍️", label:"Bike"},
+  {id:"car",    em:"🚗", label:"Car"},
+  {id:"transit",em:"🚌", label:"Public transport"},
+];
+const EVENT_META = {indoor:{em:"📘"}, outdoor:{em:"🏏"}, travel:{em:"🧳"}};
+const NOTIF_PREFS = [
+  {id:"severe", em:"🚨", label:"Severe weather & disaster alerts", sub:"IMD warnings · SACHET CAP"},
+  {id:"rain",   em:"🌧️", label:"Rain alerts", sub:"Rain windows & commute impact"},
+  {id:"aqi",    em:"😷", label:"Air quality", sub:"AQI / PM2.5 thresholds"},
+  {id:"heat",   em:"🥵", label:"Heat", sub:"Heat-wave & UV extremes"},
+];
+const QUICK_CITIES = [
+  {name:"Surat", lat:21.1702, lon:72.8311},
+  {name:"Ahmedabad", lat:23.0225, lon:72.5714},
+  {name:"Vadodara", lat:22.3072, lon:73.1812},
+  {name:"Mumbai", lat:19.076, lon:72.8777},
+  {name:"Delhi", lat:28.6139, lon:77.209},
+  {name:"Rajkot", lat:22.3039, lon:70.8022},
+];
+const DEMO_LOCATIONS = [
+  {name:"Home", icon:"🏠", city:"Surat", lat:21.1702, lon:72.8311},
+  {name:"College — SVNIT", icon:"🎓", city:"Surat", lat:21.1650, lon:72.8497},
+  {name:"Family — Yanbu", icon:"👨‍👩‍👧", city:"Yanbu", lat:24.0895, lon:38.0618},
+];
+const DEMO_SCHEDULE = [
+  {t:10, title:"College — CAD lecture", type:"indoor"},
+  {t:13, title:"Lunch", type:"indoor"},
+  {t:16, title:"Cricket with friends", type:"outdoor"},
+  {t:19, title:"Travel home", type:"travel"},
+];
+const NOTIF_DEFAULTS = {severe:true, rain:true, aqi:true, heat:true};
+
+const WMO = {
+  0:["Clear sky","☀️"], 1:["Mainly clear","🌤️"], 2:["Partly cloudy","⛅"], 3:["Overcast","☁️"],
+  45:["Foggy","🌫️"], 48:["Depositing rime fog","🌫️"],
+  51:["Light drizzle","🌦️"], 53:["Drizzle","🌦️"], 55:["Dense drizzle","🌧️"],
+  56:["Light freezing drizzle","🌧️"], 57:["Freezing drizzle","🌧️"],
+  61:["Light rain","🌦️"], 63:["Rain","🌧️"], 65:["Heavy rain","🌧️"],
+  66:["Freezing rain","🌧️"], 67:["Heavy freezing rain","🌧️"],
+  71:["Light snow","🌨️"], 73:["Snow","🌨️"], 75:["Heavy snow","❄️"], 77:["Snow grains","🌨️"],
+  80:["Light showers","🌦️"], 81:["Showers","🌧️"], 82:["Violent showers","⛈️"],
+  85:["Snow showers","🌨️"], 86:["Heavy snow showers","❄️"],
+  95:["Thunderstorm","⛈️"], 96:["Thunderstorm, light hail","⛈️"], 99:["Thunderstorm, heavy hail","⛈️"],
+};
+const wx = c => WMO[c] || ["Weather","🌡️"];
+
+// IMD district-nowcast categories (api.imd.gov.in districtnowcast schema)
+const IMD_CATS = {
+  1:{cat:"Cat1", text:"No weather", color:1},
+  7:{cat:"Cat7", text:"Moderate rain: 5–15 mm/hr", color:2},
+  9:{cat:"Cat9", text:"Moderate thunderstorms, gusts 41–61 kmph", color:2},
+  12:{cat:"Cat12", text:"Heavy rain: >15 mm/hr", color:3},
+  14:{cat:"Cat14", text:"Severe thunderstorms, gusts 62–87 kmph", color:4},
+  19:{cat:"Cat19", text:"High cloud-to-ground lightning probability (>60%)", color:4},
+};
+const IMD_COLORS = {1:"Green", 2:"Yellow", 3:"Orange", 4:"Red"};
+
+// ---------- Helpers ----------
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,"0");
+const hr12 = h => { const H=((h%24)+24)%24; const ap=H>=12?"PM":"AM"; let x=H%12; if(x===0)x=12; return x+":00 "+ap; };
+const hrShort = h => hr12(h).replace(":00","");
+const hrRange = (h,n) => hr12(h)+"–"+hr12(h+n).replace(":00","");
+function aqiClass(a){ if(a==null) return {w:"—",c:"faint"}; if(a<=50)return{w:"Good",c:"good"}; if(a<=100)return{w:"Satisfactory",c:"good"}; if(a<=200)return{w:"Moderate",c:"moderate"}; if(a<=300)return{w:"Poor",c:"poor"}; if(a<=400)return{w:"Very Poor",c:"bad"}; return{w:"Severe",c:"bad"}; }
+function aqiHealth(a){
+  if(a==null) return "No air-quality data.";
+  if(a<=100) return "Air quality is acceptable — enjoy your normal outdoor routine.";
+  if(a<=200) return "Sensitive groups: reduce prolonged outdoor exertion.";
+  if(a<=300) return "Reduce prolonged outdoor activity; consider a mask outdoors.";
+  return "Avoid outdoor exertion. N95 mask strongly recommended.";
+}
+function uvClass(u){ if(u<3)return{w:"Low",c:"good"}; if(u<6)return{w:"Moderate",c:"moderate"}; if(u<8)return{w:"High",c:"poor"}; if(u<11)return{w:"Very High",c:"bad"}; return{w:"Extreme",c:"bad"}; }
+function humClass(h){ if(h<=30)return{w:"Dry",c:"moderate"}; if(h<=65)return{w:"Comfort",c:"good"}; return{w:"Humid",c:"poor"}; }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2400); }
+function fetchTimeout(url, ms, opts){
+  return Promise.race([
+    fetch(url, opts),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms)),
+  ]);
+}
+function minutesOfDay(t){ return t.h*60 + (t.m||0); }
+
+// ---------- Profile ----------
+let profile = loadProfile();
+function loadProfile(){
+  try{
+    const p = JSON.parse(localStorage.getItem("mausam.profile.v2"));
+    if(p && p.city) return migrate(p);
+  }catch(e){}
+  return null;
+}
+function migrate(p){
+  if(!p.locations) p.locations = [{name:"Home", icon:"🏠", city:p.city.name, lat:p.city.lat, lon:p.city.lon}, ...DEMO_LOCATIONS.slice(1)];
+  if(!p.notifPrefs) p.notifPrefs = {...NOTIF_DEFAULTS};
+  if(!p.schedule) p.schedule = JSON.parse(JSON.stringify(DEMO_SCHEDULE));
+  if(!p.alertHistory) p.alertHistory = [];
+  return p;
+}
+function saveProfile(){ localStorage.setItem("mausam.profile.v2", JSON.stringify(profile)); }
+
+// ---------- State ----------
+let WX = null;
+let fetching = false;
+const SRC_STATUS = {};   // source id → "live" | "sample"
+
+/* =====================================================================
+   CONNECTORS (source layer)
+   ===================================================================== */
+
+// -- Open-Meteo forecast (LIVE) — wind_gusts + PM10-ready hourlies
+async function fetchWeather(city){
+  const {lat,lon} = city;
+  const fcUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,visibility`
+    + `&hourly=temperature_2m,precipitation_probability,weather_code,uv_index,wind_gusts_10m,apparent_temperature`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset,wind_gusts_10m_max`
+    + `&timezone=auto&forecast_days=8`;
+  const r = await fetch(fcUrl);
+  if(!r.ok) throw new Error("Forecast API "+r.status);
+  return r.json();
+}
+
+// -- Open-Meteo air quality (LIVE) — US AQI + CPCB inputs (pm2_5, pm10) + UV
+async function fetchAir(city){
+  const {lat,lon} = city;
+  const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}`
+    + `&current=us_aqi,pm2_5,pm10,uv_index&timezone=auto`;
+  try{
+    const r = await fetchTimeout(aqUrl, 6000);
+    return r.ok ? await r.json() : null;
+  }catch(e){ return null; }
+}
+
+// -- Open-Meteo historical archive (LIVE) — last 30 days daily rain → risk model
+async function fetchArchive(city){
+  const {lat,lon} = city;
+  const end = new Date(Date.now() - 5*864e5).toISOString().slice(0,10);
+  const start = new Date(Date.now() - 35*864e5).toISOString().slice(0,10);
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}`
+    + `&start_date=${start}&end_date=${end}&daily=precipitation_sum&timezone=auto`;
+  try{
+    const r = await fetchTimeout(url, 7000);
+    if(!r.ok) return null;
+    const j = await r.json();
+    const rain = (j.daily?.precipitation_sum||[]).filter(v=>v!=null);
+    if(!rain.length) return null;
+    const days = rain.length;
+    const wet = rain.filter(v=>v>=1).length;
+    const p70 = +(100*wet/days).toFixed(0);
+    const p10 = +(100*rain.filter(v=>v>=10).length/days).toFixed(0);
+    return {p70, p10, days, wet};
+  }catch(e){ return null; }
+}
+
+// -- IMD connector (api.imd.gov.in gateway)
+// The gateway requires a registered GoI API key for live calls; from the browser
+// we attempt the public district-nowcast endpoint briefly and fall back to a
+// sample payload calibrated to live model data (clearly badged in the UI).
+async function fetchIMD(city, sig){
+  try{
+    const r = await fetchTimeout("https://api.imd.gov.in/api/v1/districtnowcast", 2500);
+    if(r.ok){
+      const j = await r.json();
+      return {live:true, raw:j};
+    }
+  }catch(e){}
+  // Calibrated sample — mirrors the real districtnowcast schema (cat, color, message, toi, vupto)
+  const district = /yanbu/i.test(city.name||"") ? "— (non-India location)" : (city.name + " district");
+  let cat = 1;
+  if(sig.maxRain>=75 || sig.tstorm) cat = 14;
+  else if(sig.maxRain>=60) cat = 12;
+  else if(sig.maxRain>=35 || sig.maxGust>=40) cat = 7;
+  const c = IMD_CATS[cat];
+  const msgs = {
+    1:"Dry weather. No significant weather expected.",
+    7:"Light to moderate rainfall likely at isolated places. Thunderstorm with lightning possible.",
+    12:"Heavy rainfall likely at isolated places. Waterlogging possible in low-lying areas.",
+    14:"Severe thunderstorm with lightning and gusty winds very likely. Stay indoors.",
+  };
+  const now = new Date();
+  return {
+    live:false,
+    payload:{
+      station: district,
+      date: now.toISOString().slice(0,10),
+      cat: c.cat, catNum: cat,
+      color: c.color, colorName: IMD_COLORS[c.color],
+      message: msgs[cat],
+      toi: pad(now.getHours())+pad(now.getMinutes()),
+      vupto: pad(Math.min(now.getHours()+3,23))+pad(now.getMinutes()),
+      source: "IMD district-wise nowcast (api.imd.gov.in)",
+    }
+  };
+}
+
+// -- NDMA SACHET connector (CAP feed)
+// SACHET publishes CAP alerts at sachet.ndma.gov.in/CapFeed; the raw feed is
+// served to registered consumers, so the connector attempts a live fetch and
+// otherwise synthesizes a CAP-shaped sample alert only when conditions warrant.
+async function fetchSACHET(city, sig){
+  if(/yanbu/i.test(city.name||"")) return {live:false, payload:null};
+  try{
+    const r = await fetchTimeout("https://sachet.ndma.gov.in/CapFeed", 2500);
+    if(r.ok){
+      const txt = await r.text();
+      if(txt.includes("<alert") || txt.includes("<cap:alert")){
+        return {live:true, raw: txt.slice(0, 20000)};
+      }
+    }
+  }catch(e){}
+  const now = new Date();
+  const expires = new Date(now.getTime()+4*36e5);
+  const fmt = d => d.toISOString().slice(0,19)+"+05:30";
+  let payload = null;
+  if(sig.tstorm){
+    payload = { event:"Thunderstorm & Lightning Warning", severity:"Severe", color:"orange",
+      area: city.name+" District, Gujarat",
+      headline:"Thunderstorm with lightning likely between "+hrShort(Math.max(sig.tstormH-1,now.getHours()))+"–"+hrShort(Math.min(sig.tstormH+2,23))+".",
+      instruction:"Avoid outdoor travel and sheltering under trees. Unplug appliances.",
+      effective: fmt(now), expires: fmt(expires) };
+  } else if(sig.maxHeat>=41){
+    payload = { event:"Heat Wave Warning", severity:"Moderate", color:"yellow",
+      area: city.name+" District, Gujarat",
+      headline:"Heat-wave conditions likely; feels-like up to "+Math.round(sig.maxHeat)+"°C.",
+      instruction:"Avoid heat exposure between 12–3 PM. Drink water frequently.",
+      effective: fmt(now), expires: fmt(expires) };
+  }
+  return {live:false, payload};
+}
+
+/* =====================================================================
+   DATA PROCESSING
+   ===================================================================== */
+
+// CPCB-style sub-index (India AQI) from PM2.5 / PM10
+function cpcbAqi(pm25, pm10){
+  // CPCB sub-index: piecewise-linear interpolation over India's AQI breakpoints
+  const simple = (c, brk)=>{
+    if(c==null) return null;
+    for(let i=0;i<brk.length-1;i++){
+      if(c<=brk[i+1][0]) return Math.round(brk[i][1] + (c-brk[i][0])*(brk[i+1][1]-brk[i][1])/(brk[i+1][0]-brk[i][0]));
+    }
+    return 500;
+  };
+  const PM25 = [[0,0],[30,50],[60,100],[90,200],[120,300],[250,400],[500,500]];
+  const PM10 = [[0,0],[50,50],[100,100],[250,200],[350,300],[430,400],[500,500]];
+  const a = simple(pm25, PM25), b = simple(pm10, PM10);
+  return (a==null&&b==null) ? null : Math.max(a??0, b??0);
+}
+
+function processAndPersonalize(raw, prof){
+  const {fc, aq, imd, sachet, risk} = raw;
+  const cur = fc.current, hourly = fc.hourly, daily = fc.daily;
+  const interests = prof.interests, mode = prof.mode;
+  const isInt = i => interests.includes(i);
+
+  const nowIso = cur.time.slice(0,13);
+  let nowIdx = hourly.time.findIndex(t=>t.slice(0,13)===nowIso);
+  if(nowIdx<0) nowIdx = 0;
+  const today = hourly.time[0].slice(0,10);
+  const range = (from,to)=>Array.from({length:to-from},(_,i)=>from+i).filter(h=>h>=nowIdx && h<hourly.time.length && hourly.time[h].slice(0,10)===today);
+  const restOfDay = range(nowIdx, 24);
+  const wholeDay = Array.from({length:24},(_,i)=>i).filter(h=>h<hourly.time.length && hourly.time[h].slice(0,10)===today);
+
+  const val = (h,key)=>hourly[key]?.[h];
+  const maxBy = (idxs,key)=>idxs.reduce((best,h)=> (val(h,key)??-1) > (val(best,key)??-1) ? h : best, idxs[0]??nowIdx);
+  const atOrAfter = (h,n)=>hrRange(hourly.time[h] ? +hourly.time[h].slice(11,13) : 0, n);
+
+  // ---- AQI processing: prefer India-CPCB index built from PM2.5/PM10 ----
+  const pm25 = aq?.current?.pm2_5 ?? null;
+  const pm10 = aq?.current?.pm10 ?? null;
+  const cpcb = cpcbAqi(pm25, pm10);
+  const curAqi = cpcb ?? aq?.current?.us_aqi ?? null;
+  const aqiScale = cpcb!=null ? "CPCB" : "US";
+  const curUv = aq?.current?.uv_index ?? hourly.uv_index?.[nowIdx] ?? 0;
+  const curRainPct = hourly.precipitation_probability?.[nowIdx] ?? 0;
+  const curVisKm = cur.visibility!=null ? Math.round(cur.visibility/1000) : null;
+
+  // ---- day signals ----
+  const dayHours = wholeDay.length? wholeDay : [nowIdx];
+  const maxRainH = maxBy(dayHours, "precipitation_probability");
+  const maxRain = val(maxRainH,"precipitation_probability") ?? 0;
+  const maxUvH = maxBy(dayHours, "uv_index");
+  const maxUv = val(maxUvH,"uv_index") ?? 0;
+  const maxHeatH = maxBy(dayHours, "apparent_temperature");
+  const maxHeat = val(maxHeatH,"apparent_temperature") ?? 0;
+  const maxGustH = maxBy(dayHours, "wind_gusts_10m");
+  const maxGust = val(maxGustH,"wind_gusts_10m") ?? 0;
+  const rainTodayMm = daily.precipitation_sum?.[0] ?? 0;
+  const rainCode = [51,53,55,61,63,65,80,81,82,95,96,99].includes(cur.weather_code);
+  const tstorm = [95,96,99].includes(cur.weather_code) || (val(maxRainH,"weather_code")>=95);
+  const sunriseStr = daily.sunrise?.[0]?.slice(11,16) || "06:15";
+  const sunsetStr = daily.sunset?.[0]?.slice(11,16) || "18:45";
+  const sunriseH = +sunriseStr.slice(0,2);
+  const sunsetH = +sunsetStr.slice(0,2);
+
+  // ---- BEST OUTDOOR WINDOW (UV + rain + heat) ----
+  let bestWin = null;
+  {
+    let runStart = null;
+    for(let h=Math.max(6, Math.min(nowIdx, sunriseH)); h<=Math.min(sunsetH,23); h++){
+      const ok = h<hourly.time.length && hourly.time[h]?.slice(0,10)===today &&
+        (val(h,"precipitation_probability")??0)<40 && (val(h,"uv_index")??0)<7 && (val(h,"apparent_temperature")??0)<38;
+      if(ok && runStart==null) runStart = h;
+      if((!ok || h===Math.min(sunsetH,23)) && runStart!=null){
+        const len = h - runStart;
+        if(!bestWin || len>bestWin.len) bestWin = {a:runStart, b:h, len};
+        runStart = null;
+      }
+    }
+  }
+
+  const sig = {maxRain, maxRainH, maxUv, maxUvH, maxHeat, maxHeatH, maxGust, maxGustH, rainTodayMm, rainCode, tstorm, tstormH:maxRainH, sunriseH, sunsetH};
+
+  // ---- schedule merging ----
+  const schedInsights = [];
+  const schedEval = [];
+  const events = (prof.schedule||[]).slice().sort((a,b)=>a.t-b.t);
+  const outdoorish = ev => ev.type==="outdoor" || /cricket|match|park|garden|market|field|picnic/i.test(ev.title);
+  const rainAt = h => val(h,"precipitation_probability") ?? (h<nowIdx?0:curRainPct);
+  const trafficHash = [...(today+prof.city.name+mode)].reduce((a,ch)=>a+ch.charCodeAt(0),0);
+  const trafficLevels = ["light","moderate","heavy"];
+  let trafficLevel = trafficLevels[trafficHash%3];
+  if(maxRain>=60) trafficLevel = "heavy";
+  const trafficExtra = {light:0, moderate:10, heavy:25}[trafficLevel];
+
+  events.forEach(ev=>{
+    const h = ev.t;
+    const r = h<hourly.time.length && hourly.time[h]?.slice(0,10)===today ? rainAt(h) : null;
+    const tp = val(h,"temperature_2m") ?? cur.temperature_2m;
+    const uv = val(h,"uv_index") ?? 0;
+    const reasons = [];
+    let verdict, tone, icon = "🗓️";
+    if(r==null){ verdict = {line:"Outside today's forecast window.", tone:"info"}; }
+    else if(r>=60){
+      tone="warn"; icon = outdoorish(ev)?"⛈️":"🌧️";
+      verdict = {line:`<b class="warn">⚠ ${r}% rain at ${hrShort(h)}</b> — ${outdoorish(ev)?"consider postponing this outdoor plan":"carry rain protection / plan indoors"}.`, tone};
+      reasons.push(`Hourly model shows ${r}% precipitation probability at ${hr12(h)}.`);
+      if(outdoorish(ev)) reasons.push("This is an outdoor event, so rain directly conflicts with it.");
+    } else if(r>=35){
+      tone="caution"; icon="🌦️";
+      verdict = {line:`Light rain possible (${r}%) — keep a buffer.`, tone};
+      reasons.push(`Rain probability ${r}% at ${hr12(h)} is in the "possible" band (35–59%).`);
+    } else {
+      tone="ok"; icon="✅";
+      verdict = {line:`<b class="ok">Clear at ${hrShort(h)}</b> — ${r}% rain chance.`, tone};
+      reasons.push(`Rain probability only ${r}% at ${hr12(h)} — no weather conflict.`);
+    }
+    if(uv>=7 && outdoorish(ev)){ verdict.line += ` High UV (${uv.toFixed(0)}) — sun protection advised.`; reasons.push(`UV index ${uv.toFixed(0)} at ${hr12(h)}.`); }
+    if(tp>=38){ verdict.line += ` Very hot (~${Math.round(tp)}°C) — hydrate.`; reasons.push(`Temperature ~${Math.round(tp)}°C at ${hr12(h)}.`); }
+    if(ev.type==="travel" || /travel|commute|home|station/i.test(ev.title)){
+      verdict.line += ` Traffic ${trafficLevel} — budget +${trafficExtra} min. Leave ${r>=50?"20":"10"} min early.`;
+      reasons.push(`Traffic layer (mock, deterministic per day): ${trafficLevel} congestion → +${trafficExtra} min on your ${MODES.find(m=>m.id===mode).label.toLowerCase()} route.`);
+      if(r>=50){ reasons.push(`Rain ${r}% around ${hr12(h)} slows traffic further; depart early.`); }
+    }
+    schedEval.push({...ev, rain:r, temp:tp, uv, verdict});
+    if(h>=nowIdx-1 && r!=null){
+      // departure advice
+      if((ev.type==="travel"||/travel|commute|home|college|class|lecture/i.test(ev.title)) && r>=50){
+        schedInsights.push({hour:Math.max(h-1,nowIdx), icon:"⏰", tone:"caution",
+          title:`Leave early for “${ev.title}”`, detail:`${r}% rain around ${hr12(h)} — leave ${hrShort(Math.max(h-1, nowIdx))}–ish, ${trafficLevel} traffic adds ~${trafficExtra} min.`,
+          reasons:[`Event “${ev.title}” at ${hr12(h)}; rain probability ${r}% in the preceding hour; traffic ${trafficLevel}.`, "Rule: travel-type event + rain ≥ 50% → advance departure."],
+          who:["schedule","travel"]});
+      }
+      if(outdoorish(ev) && r>=60){
+        schedInsights.push({hour:h, icon:"⛈️", tone:"warn",
+          title:`“${ev.title}” conflicts with storm window`,
+          detail:`${r}% rain at ${hr12(h)} — consider postponing or moving indoors.`,
+          reasons:[`Your schedule: “${ev.title}” at ${hr12(h)}.`,`Forecast: ${r}% rain probability at that hour${tstorm?" with thunderstorm code":""}.`, "Schedule × forecast merge → conflict detected."],
+          who:["schedule"]});
+      }
+    }
+  });
+  const nextEvent = schedEval.find(e=>e.t>=new Date().getHours()) || null;
+
+  // ---- build home insights ----
+  const insights = [];
+  const add = o=>insights.push(o);
+
+  // Government / official sources first
+  const imdP = imd?.payload;
+  if(imdP && imdP.color>=2){
+    add({hour:nowIdx, icon:"🏢", tone: imdP.color>=3?"warn":"caution",
+      title:`IMD ${IMD_COLORS[imdP.color]} alert — ${imdP.cat}`,
+      detail: imdP.message + ` (valid till ${String(imdP.vupto).slice(0,2)}:${String(imdP.vupto).slice(2,4)} IST)`,
+      reasons:[`${imdP.source}: ${imdP.cat} — ${IMD_CATS[imdP.catNum]?.text||imdP.cat}. Severity colour: ${imdP.colorName}.`,
+        imdP.live ? "Fetched live from the IMD API gateway." : "Gateway sample payload (registered API key needed for live IMD calls) — calibrated to today's live model data."],
+      who:["severe"]});
+  }
+  const scP = sachet?.payload;
+  if(scP){
+    add({hour:nowIdx, icon:"🚨", tone:"warn",
+      title:`${scP.event} — ${scP.severity}`,
+      detail: `${scP.headline} ${scP.instruction} (Area: ${scP.area})`,
+      reasons:["NDMA SACHET distributes CAP (Common Alerting Protocol) warnings from authorized agencies incl. IMD.",
+        scP.live ? "Live CAP feed." : "SACHET sample payload (live feed needs registered access) — triggered by today's live conditions."],
+      who:["severe"]});
+  }
+
+  // Best outdoor window
+  if(bestWin && bestWin.len>=1 && isInt("outdoor")){
+    add({hour:bestWin.a, icon:"🏞️", tone:"good",
+      title:`Best outdoor window: ${hrRange(bestWin.a, Math.min(bestWin.len,3))}`,
+      detail:`Lowest UV, rain & heat overlap${bestWin.len>2?" for a "+bestWin.len+"-hour stretch":""}.`,
+      reasons:["Scanned every daytime hour for rain < 40%, UV < 7 and feels-like < 38°C, then picked the longest clean stretch.",
+        `You selected Outdoor activities, so Mausam surfaces optimal windows.`],
+      who:["outdoor"]});
+  }
+
+  // Morning comfort
+  const morningH = range(Math.max(nowIdx,8), 11);
+  if(morningH.length){
+    const mRain = Math.max(...morningH.map(h=>val(h,"precipitation_probability")??0), 0);
+    const mTemp = val(morningH[0],"temperature_2m") ?? cur.temperature_2m;
+    const mHeat = Math.max(...morningH.map(h=>val(h,"apparent_temperature")??0), 0);
+    if(mRain < 40 && mHeat < 38){
+      add({hour:8, icon:"🧭", tone:"good", title:"Comfortable for travel in the morning",
+        detail:`Around ${hr12(8)} it's ~${Math.round(mTemp)}°C with only ${mRain}% rain chance.`,
+        reasons:[`Rain probability stays low through the morning (peak ${mRain}% between 8–11 AM).`,`Feels-like temperature is in the comfortable band (below 38°C).`],
+        who: isInt("travel")||isInt("work") ? ["travel","work"].filter(isInt) : []});
+    }
+  }
+
+  // Rain window
+  if(maxRain >= 45){
+    const h = maxRainH, n = maxRain>=75?3:2;
+    if(h>=nowIdx){
+      const wetModes = ["walk","cycle","bike","transit"].includes(mode);
+      add({hour:h, icon: maxRain>=75?"🌧️":"🌦️", tone: maxRain>=75?"warn":"caution",
+        title: maxRain>=75 ? `${maxRain}% rain likely ${atOrAfter(h,n)}` : `Rain possible around ${hr12(h)} (${maxRain}%)`,
+        detail: mode==="cycle" ? "Wet roads — expect low grip on your cycle." :
+                mode==="bike" ? "Slick roads and poor visibility while riding." :
+                mode==="walk" ? "Carry an umbrella or waterproof layer." :
+                mode==="transit" ? "Bus delays are common in heavy rain." :
+                "Slow traffic and waterlogging likely on the roads.",
+        reasons:[`Hourly forecast peaks at ${maxRain}% precipitation probability around ${hr12(h)}.`,
+                 wetModes ? `You travel by ${MODES.find(m=>m.id===mode).label.toLowerCase()}, so rain directly affects your commute.` : `You chose Travel interest, so rain windows are prioritised.`],
+        who: isInt("rain") ? ["rain"] : (wetModes?[mode]:["travel"]).filter(x=>isInt(x)||x===mode)});
+    }
+  }
+
+  // UV peak
+  if(maxUv >= 6){
+    const h = maxUvH;
+    const outdoorishU = isInt("outdoor")||mode==="walk"||mode==="cycle";
+    add({hour:h, icon:"🧴", tone: maxUv>=8?"warn":"caution",
+      title: maxUv>=8 ? `Very high UV (${maxUv.toFixed(0)}) → use sunscreen` : `High UV around midday (${maxUv.toFixed(0)})`,
+      detail: h>=nowIdx ? `Peak between ${hrRange(Math.max(h-1,sunriseH+2),2)}. Shade or SPF 30+ recommended.` : "UV peak has passed for today.",
+      reasons:[`UV index reaches ${maxUv.toFixed(0)} (6–7 High, 8–10 Very High) around ${hr12(h)}.`,
+               outdoorishU ? "You selected Outdoor activities, so sun exposure matters to you." : "Health interest: UV is a key skin-health signal."],
+      who: isInt("outdoor")?["outdoor"]:isInt("health")?["health"]:[]});
+  }
+
+  // Heat
+  if(maxHeat >= 36){
+    const h = maxHeatH;
+    add({hour:h, icon:"🥵", tone: maxHeat>=41?"warn":"caution",
+      title: maxHeat>=41 ? `Extreme heat ~${Math.round(maxHeat)}°C ${atOrAfter(Math.max(h-1,nowIdx),2)}` : `Hot afternoon ~${Math.round(maxHeat)}°C feels-like`,
+      detail: isInt("outdoor") ? "Reschedule outdoor activity to early morning or after sunset." :
+              isInt("agri") ? "Irrigate early morning; avoid mid-day field work." :
+              "Stay hydrated; avoid peak-sun exertion.",
+      reasons:[`Feels-like temperature peaks at ${Math.round(maxHeat)}°C around ${hr12(h)} (humidity ${cur.relative_humidity_2m}%).`,
+               "Heat thresholds: 36°C caution, 41°C extreme for outdoor exertion."],
+      who: [isInt("outdoor")?"outdoor":null, isInt("health")?"health":null, isInt("agri")?"agri":null].filter(Boolean)});
+  }
+
+  // Cyclist gusts / driver visibility / transit
+  if(mode==="cycle" && maxGust >= 30){
+    add({hour:maxGustH, icon:"🚴", tone: maxGust>=45?"warn":"caution",
+      title: `Strong gusts (${Math.round(maxGust)} km/h) ${maxGustH>=nowIdx?atOrAfter(maxGustH,2):"today"} → headwinds on ride`,
+      detail:"Side gusts are risky on bridges and open roads.",
+      reasons:[`Wind gusts peak at ${Math.round(maxGust)} km/h around ${hr12(maxGustH)}.`,"Cycling: gusts above 30 km/h materially affect balance and effort."],
+      who:["cycle"]});
+  }
+  if((mode==="car"||mode==="bike") && rainCode && (cur.visibility==null || cur.visibility<4000)){
+    add({hour:nowIdx, icon: mode==="car"?"🚗":"🏍️", tone:"caution",
+      title:"Low visibility while driving",
+      detail:"Fog or heavy rain — keep headlights on and double the following distance.",
+      reasons:[`Current visibility is about ${curVisKm ?? "<4"} km with weather code ${cur.weather_code} (${wx(cur.weather_code)[0]}).`],
+      who:[mode]});
+  }
+  if(mode==="transit" && maxRain>=60){
+    add({hour:maxRainH>=nowIdx?maxRainH:nowIdx, icon:"🚌", tone:"caution",
+      title:"Expect delays on public transport",
+      detail:"Leave 15–20 min early; bus and local services slow down in rain.",
+      reasons:[`Rain probability up to ${maxRain}% today typically slows bus/local services.`,"Public transport selected as your travel mode."],
+      who:["transit"]});
+  }
+
+  // Agriculture
+  if(isInt("agri")){
+    if(rainTodayMm >= 10){
+      add({hour:9, icon:"🌾", tone:"info", title:`~${Math.round(rainTodayMm)} mm rain expected today — pause irrigation`,
+        detail:"Good for standing crops; check field drainage.",
+        reasons:[`Daily precipitation sum is ${rainTodayMm.toFixed(1)} mm.`,"Agriculture interest: rainfall drives irrigation scheduling."], who:["agri"]});
+    } else if(rainTodayMm < 2 && maxHeat>=33){
+      add({hour:9, icon:"🌾", tone:"caution", title:"Dry & hot — irrigate early morning",
+        detail:"High evaporation loss if you irrigate after 10 AM.",
+        reasons:[`Only ${rainTodayMm.toFixed(1)} mm rain expected and feels-like peaks at ${Math.round(maxHeat)}°C.`], who:["agri"]});
+    }
+    if(maxGust >= 35){
+      add({hour:maxGustH, icon:"🌾", tone:"caution", title:`Avoid pesticide spraying — gusts up to ${Math.round(maxGust)} km/h`,
+        detail:"Drift risk is high in strong wind.",
+        reasons:[`Wind gusts peak at ${Math.round(maxGust)} km/h today.`,"Agriculture: spraying unsafe above ~30 km/h."], who:["agri"]});
+    }
+  }
+
+  // Air quality + health recommendation
+  if(curAqi!=null && curAqi>=100){
+    add({hour:nowIdx, icon:"😷", tone: curAqi>=300?"warn":"caution",
+      title:`Air is ${aqiClass(curAqi).w.toLowerCase()} (AQI ${Math.round(curAqi)})`,
+      detail: aqiHealth(curAqi),
+      reasons:[`${aqiScale} AQI is ${Math.round(curAqi)} — computed from PM2.5 ${pm25?.toFixed(0) ?? "—"} and PM10 ${pm10?.toFixed(0) ?? "—"} µg/m³ (CPCB breakpoints).`,
+               isInt("air") ? "You selected Air quality as an interest." : "Health interest: AQI above 100 affects breathing."],
+      who: isInt("air")?["air"]:isInt("health")?["health"]:[]});
+  }
+
+  // Historical rain-risk model
+  if(risk){
+    const wetDay = (val(nowIdx,"precipitation_probability")??0)>=35 || rainCode;
+    const trend = risk.p70>=60 ? "This month has been unusually wet" : risk.p70>=35 ? "Rain has been frequent this month" : "This month has been relatively dry";
+    add({hour:7, icon:"📊", tone:"info",
+      title:`Rain risk model: ${wetDay? "wet pattern today — matches recent trend":"today sits in a "+risk.p70+"%-wet month"}`,
+      detail:`Over the last ${risk.days} days, ${risk.wet} days had ≥1 mm rain (${risk.p70}% wet-day rate${risk.p10?`, ${risk.p10}% had ≥10 mm`:''}). ${trend}.`,
+      reasons:["Historical connector: Open-Meteo ERA5 archive, last 30+ days of observed daily rainfall.",
+        "A trained model (logistic regression → LSTM) would replace this baseline; the pipeline and API contract stay identical.",
+        wetDay ? "Today's rain code/probability flags a wet day, consistent with the historical base rate." : "Today is currently below the historical wet-day threshold."],
+      who: isInt("agri")?["agri","rain"].filter(isInt):[]});
+  }
+
+  // Merge schedule-derived insights
+  schedInsights.forEach(si=>insights.push(si));
+  insights.sort((a,b)=>a.hour-b.hour);
+
+  // ---- Top-level ALERT (disaster > IMD > weather) ----
+  let alert = null;
+  const futureHours = restOfDay.length ? restOfDay : dayHours.slice(-4);
+  const fMaxRainH = maxBy(futureHours, "precipitation_probability");
+  const fMaxRain = val(fMaxRainH,"precipitation_probability") ?? 0;
+  const fMaxGust = Math.max(...futureHours.map(h=>val(h,"wind_gusts_10m")??0), 0);
+  const fMaxHeat = Math.max(...futureHours.map(h=>val(h,"apparent_temperature")??0), 0);
+
+  if(scP){
+    alert = {cat:"severe", tone: scP.severity==="Severe"?"level-red":"level-yellow", src:"NDMA SACHET", icon:"🚨",
+      title: scP.event,
+      body:`${scP.headline} ${scP.instruction}`,
+      reasons:["Source: NDMA SACHET — India's national CAP disaster-alert portal receiving warnings from IMD and state agencies.",
+        "SACHET sample payload (live CAP feed requires registered access), triggered by today's live conditions: " + (sig.tstorm?`thunderstorm code in today's hourly forecast`:`heat signal in today's forecast`) + "."]};
+  } else if(imdP && imdP.color>=3){
+    alert = {cat:"severe", tone: imdP.color>=4?"level-red":"level-orange", src:"IMD", icon:"🏢",
+      title:`${IMD_COLORS[imdP.color]} alert — ${imdP.cat}`,
+      body: imdP.message + ` Valid till ${String(imdP.vupto).slice(0,2)}:${String(imdP.vupto).slice(2,4)} IST.`,
+      reasons:[`Source: ${imdP.source} (${imdP.cat}: ${IMD_CATS[imdP.catNum]?.text}).`,
+        imdP.live ? "Fetched live from the IMD gateway." : "IMD gateway sample payload — live calls need a registered API key; calibrated to live model conditions."]};
+  } else if(fMaxRain >= 70){
+    alert = {cat:"rain", tone:"warning", src:"Mausam engine", icon:"🌧️",
+      title:"Heavy rain likely "+atOrAfter(fMaxRainH, 2),
+      body:`${fMaxRain}% rain probability expected. ${isInt("outdoor")?"Your outdoor activity may be affected.": mode==="walk"?"Carry an umbrella for your commute.": mode==="bike"||mode==="cycle"?"Riding conditions will be unsafe — consider alternative transport.":"Plan extra travel time."}`,
+      reasons:[`Precipitation probability peaks at ${fMaxRain}% within the next hours (hourly model data).`,
+        `Trigger rule: rain ≥ 70% → alert. Your profile (${isInt("outdoor")?"Outdoor activities":MODES.find(m=>m.id===mode).label}) makes this actionable.`]};
+  } else if(fMaxHeat >= 41){
+    alert = {cat:"heat", tone:"warning", src:"Mausam engine", icon:"🥵", title:"Extreme heat alert",
+      body:`Feels-like temperature may reach ${Math.round(fMaxHeat)}°C. Limit time outside, hydrate frequently.`,
+      reasons:[`Feels-like peaks at ${Math.round(fMaxHeat)}°C in the coming hours.`,"Trigger rule: feels-like ≥ 41°C → extreme heat alert."]};
+  } else if(curAqi!=null && curAqi>=250){
+    alert = {cat:"aqi", tone:"warning", src:"Mausam engine", icon:"😷", title:"Very poor air quality",
+      body:`AQI ${Math.round(curAqi)}. Avoid outdoor activity; wear a mask if you step out.`,
+      reasons:[`${aqiScale} AQI currently ${Math.round(curAqi)}.`,"Trigger rule: AQI ≥ 250 → air quality alert."]};
+  } else if(fMaxGust >= 50){
+    alert = {cat:"severe", tone:"warning", src:"Mausam engine", icon:"💨", title:"Strong wind warning",
+      body:`Gusts up to ${Math.round(fMaxGust)} km/h expected. Secure loose objects; two-wheeler riders take care.`,
+      reasons:[`Wind gusts peak at ${Math.round(fMaxGust)} km/h in the coming hours.`,"Trigger rule: gusts ≥ 50 km/h → wind warning."]};
+  }
+
+  return {cur, hourly, daily, nowIdx, today,
+    metrics:{curRainPct, curUv, curAqi, aqiScale, pm25, pm10, curVisKm},
+    signals:{...sig, bestWin, sunsetStr, sunriseStr},
+    schedEval, nextEvent, traffic:{level:trafficLevel, extra:trafficExtra},
+    insights, alert, risk};
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+function renderHome(p, prof){
+  const {cur, metrics, insights, alert, hourly, nowIdx, signals} = p;
+  const h = new Date().getHours();
+  $("greeting").textContent = (h<12?"Good morning":h<17?"Good afternoon":"Good evening") + " · " + prof.city.name;
+
+  $("curTemp").textContent = Math.round(cur.temperature_2m);
+  $("curIco").textContent = cur.is_day ? wx(cur.weather_code)[1] : (["0","1"].includes(String(cur.weather_code))?"🌙":wx(cur.weather_code)[1]);
+  $("curCond").textContent = wx(cur.weather_code)[0] + (cur.is_day?"":" · night");
+  $("feelsLine").textContent = `Feels like ${Math.round(cur.apparent_temperature)}° · updated ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
+  $("sunLine").textContent = `🌅 ${signals.sunriseStr} · 🌇 ${signals.sunsetStr}`;
+
+  // metrics
+  $("v-rain").textContent = metrics.curRainPct+"%";
+  const rs = $("s-rain"); rs.className = "s "+(metrics.curRainPct>=70?"bad":metrics.curRainPct>=40?"poor":"good");
+  rs.textContent = metrics.curRainPct>=70?"Very likely":metrics.curRainPct>=40?"Possible":"Unlikely";
+  $("v-uv").textContent = metrics.curUv.toFixed(1);
+  const us = uvClass(metrics.curUv); $("s-uv").className="s "+us.c; $("s-uv").textContent=us.w;
+  if(metrics.curAqi!=null){
+    $("v-aqi").textContent = Math.round(metrics.curAqi);
+    const as=aqiClass(metrics.curAqi); $("s-aqi").className="s "+as.c; $("s-aqi").textContent=as.w;
+  } else { $("v-aqi").textContent="—"; $("s-aqi").textContent="N/A"; }
+  $("v-pm").textContent = (metrics.pm25?.toFixed(0)??"–")+" / "+(metrics.pm10?.toFixed(0)??"–");
+  const ps = $("s-pm"); ps.className="s "+(metrics.pm25>=90?"bad":metrics.pm25>=60?"poor":"good");
+  ps.textContent = metrics.pm25!=null ? (metrics.pm25>=90?"Unhealthy":metrics.pm25>=60?"Elevated":"OK") : "µg/m³";
+  $("v-hum").textContent = Math.round(cur.relative_humidity_2m)+"%";
+  const hs = humClass(cur.relative_humidity_2m); $("s-hum").className="s "+hs.c; $("s-hum").textContent=hs.w;
+  $("v-wind").textContent = Math.round(cur.wind_speed_10m);
+  $("s-wind").className="s "+(cur.wind_speed_10m>=35?"poor":"good"); $("s-wind").textContent="km/h";
+
+  // alert banners — disaster/official first, weather second; gated by notification prefs
+  const slot = $("alertSlot");
+  slot.innerHTML = "";
+  updateStaleBadge();
+  const banners = [];
+  if(alert && (prof.notifPrefs[alert.cat]!==false)) banners.push(alert);
+  banners.forEach(a=>recordAlert(a));
+  updateHistoryBadge();
+  if(banners.length){
+    slot.innerHTML = banners.slice(0,2).map((a,i)=>`
+      <div class="alert ${a.tone==="warning"?"":a.tone}" id="alertCard${i}">
+        <div class="alert-head">${a.icon} ${a.src==="NDMA SACHET"?"Disaster Alert":a.src==="IMD"?"Official Weather Warning":"Weather Alert"}
+          <span class="tag">${a.tone==="warning"?"ACTION ADVISED":a.tone==="level-red"?"RED":a.tone==="level-orange"?"ORANGE":a.tone==="level-yellow"?"YELLOW":"CAUTION"}</span>
+          <span class="src">SRC: ${a.src}</span></div>
+        <div class="alert-body"><b>${a.title}.</b> ${a.body}</div>
+        <div class="alert-cta">Tap to see why →</div></div>`).join("");
+    banners.slice(0,2).forEach((a,i)=>{ $("alertCard"+i).onclick = ()=>showWhy(a.title, a.body, a.reasons, "Sources: "+a.src+" · your notification prefs: "+a.cat); });
+    const first = banners[0];
+    if(first.title !== p.prevAlertTitle){
+      toast(`🔔 ${first.title}`);
+    }
+  }
+
+  // hourly strip
+  const strip = $("hourlyStrip");
+  let chips = "";
+  for(let i=nowIdx; i<Math.min(nowIdx+9, hourly.time.length); i++){
+    const hh = +hourly.time[i].slice(11,13);
+    const pp = hourly.precipitation_probability?.[i] ?? 0;
+    chips += `<div class="hour-chip ${i===nowIdx?"now":""}">
+      <div class="h">${i===nowIdx?"Now":hrShort(hh)}</div>
+      <div class="i">${wx(hourly.weather_code[i])[1]}</div>
+      <div class="t">${Math.round(hourly.temperature_2m[i])}°</div>
+      <div class="r">💧${pp}%</div></div>`;
+  }
+  strip.innerHTML = chips;
+
+  // timeline
+  const tl = $("dayTimeline");
+  tl.innerHTML = "";
+  const WHO_LABELS = {severe:"Severe weather alerts", schedule:"Your schedule"};
+  const whoLabel = w => WHO_LABELS[w] || (INTERESTS.find(i=>i.id===w)||MODES.find(m=>m.id===w)||{label:w}).label;
+  if(!insights.length){
+    tl.innerHTML = `<div class="insight" style="cursor:default;"><div class="ico good">👌</div><div class="body">
+      <div class="title">All clear — no weather concerns for your day.</div>
+      <div class="why-hint">No signals crossed your personal thresholds.</div></div></div>`;
+  }
+  insights.forEach(ins=>{
+    const el = document.createElement("div");
+    el.className = "insight";
+    el.innerHTML = `<div class="ico ${ins.tone==="ok"?"good":ins.tone}">${ins.icon}</div><div class="body">
+      <div class="when">${hrShort(ins.hour)}</div>
+      <div class="title">${ins.title}</div>
+      ${ins.detail?`<div class="who" style="border:none;background:none;padding:0;margin-top:3px;">${ins.detail}</div>`:""}
+      ${ins.who&&ins.who.length?`<div class="who">🎯 for your: ${ins.who.map(whoLabel).join(", ")}</div>`:""}
+      <div class="why-hint">WHY AM I SEEING THIS?</div></div>`;
+    el.onclick = ()=>showWhy(ins.title, ins.detail||"", ins.reasons, ins.who&&ins.who.length?("Your profile: "+ins.who.map(whoLabel).join(", ")):"General weather intelligence");
+    tl.appendChild(el);
+  });
+}
+
+function renderSchedule(p){
+  const list = $("schedList");
+  const nowH = new Date().getHours();
+  list.innerHTML = "";
+  const events = p.schedEval || [];
+  if(!events.length){
+    list.innerHTML = `<div class="insight" style="cursor:default;"><div class="ico info">🗓️</div><div class="body">
+      <div class="title">No events yet — add one below and watch weather merge with your day.</div></div></div>`;
+    return;
+  }
+  events.forEach(ev=>{
+    const past = ev.t < nowH;
+    const isNext = p.nextEvent && p.nextEvent.t===ev.t && !past;
+    const el = document.createElement("div");
+    el.className = "sched-ev"+(past?" past":"")+(isNext?" next":"");
+    el.innerHTML = `
+      <div class="tcol"><div class="hh">${hrShort(ev.t).replace(" AM","").replace(" PM","")}</div><div class="mm">${hrShort(ev.t).includes("AM")?"AM":"PM"}</div>${isNext?'<div class="line"></div><div class="mm" style="color:var(--accent)">NEXT</div>':""}</div>
+      <div class="body">
+        <div class="title">${EVENT_META[ev.type]?.em||"📌"} ${ev.title}</div>
+        <div class="verdict">${ev.verdict?.line||"—"}</div>
+        <div class="chips">
+          ${ev.rain!=null?`<span class="chip ${ev.rain>=60?"wet":ev.rain>=35?"rainy":""}">💧 ${ev.rain}% rain</span>`:""}
+          <span class="chip ${ev.temp>=38?"hot":""}">🌡️ ${Math.round(ev.temp)}°C</span>
+          <span class="chip ${ev.uv>=7?"uvhi":""}">☀️ UV ${ev.uv.toFixed(0)}</span>
+          ${ev.type==="travel"?`<span class="chip">🚦 ${p.traffic.level} · +${p.traffic.extra}m</span>`:""}
+        </div>
+      </div>
+      <button class="del-ev" title="Remove">✕</button>`;
+    el.querySelector(".del-ev").onclick = (e)=>{
+      e.stopPropagation();
+      profile.schedule = profile.schedule.filter(x=>!(x.t===ev.t && x.title===ev.title));
+      saveProfile(); refresh(true);
+    };
+    el.onclick = ()=>showWhy(`“${ev.title}” @ ${hrShort(ev.t)}`, ev.verdict?.line||"", [
+      `Merged layers: (1) hourly forecast at ${hr12(ev.t)} — rain ${ev.rain??"—"}%, temp ${Math.round(ev.temp)}°C, UV ${ev.uv.toFixed(0)}; (2) traffic layer: ${p.traffic.level}; (3) event type: ${ev.type}.`,
+      "The same engine that builds your homepage applies your schedule as another personalization input."],
+      "Inputs: Open-Meteo hourly + traffic (mock) + your timetable");
+    list.appendChild(el);
+  });
+}
+
+function renderForecast(p){
+  const {hourly, daily, nowIdx} = p;
+  let startIdx = nowIdx;
+  if (24 - nowIdx < 8) startIdx = 0;
+  let rows = `<tr><th>Time</th><th>Temp</th><th>Rain</th><th style="width:74px;"></th></tr>`;
+  for(let i=startIdx; i<Math.min(24, hourly.time.length); i+=3){
+    const hh = +hourly.time[i].slice(11,13);
+    const pp = hourly.precipitation_probability?.[i] ?? 0;
+    const isNow = i===nowIdx;
+    rows += `<tr${isNow?' style="background:rgba(255,179,71,.08);"':''}><td style="color:var(--muted);">${isNow?"▸ ":""}${hr12(hh)}</td>
+      <td class="num">${Math.round(hourly.temperature_2m[i])}°C</td>
+      <td class="num" style="color:var(--blue);">${pp}%</td>
+      <td><div class="rainbar"><i style="width:${pp}%"></i></div></td></tr>`;
+  }
+  $("hourlyTable").innerHTML = rows;
+
+  let dhtml = "";
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  for(let d=0; d<Math.min(7, daily.time.length); d++){
+    const dt = new Date(daily.time[d]+"T12:00:00");
+    const pp = daily.precipitation_probability_max?.[d] ?? 0;
+    const [cond, ico] = wx(daily.weather_code[d]);
+    dhtml += `<div class="day-row">
+      <div class="d">${d===0?"Today":days[dt.getDay()]}</div>
+      <div class="i">${ico}</div>
+      <div class="cond">${cond} · ${Math.round(daily.precipitation_sum?.[d]??0)}mm · UV ${Math.round(daily.uv_index_max?.[d]??0)}</div>
+      <div class="rainp">${pp}%</div>
+      <div class="temps"><span class="lo">${Math.round(daily.temperature_2m_min[d])}°</span> ${Math.round(daily.temperature_2m_max[d])}°</div>
+    </div>`;
+  }
+  $("dailyList").innerHTML = dhtml;
+}
+
+function renderSettings(p, prof){
+  $("setLocName").textContent = prof.city.name;
+  $("setInterestVal").textContent = prof.interests.map(i=>INTERESTS.find(x=>x.id===i)?.label||i).join(", ") || "—";
+  $("setModeVal").textContent = (MODES.find(x=>x.id===prof.mode)||{}).label || "—";
+  $("setSchedVal").textContent = (prof.schedule||[]).length + " events today";
+
+  const rows = $("notifRows");
+  rows.innerHTML = NOTIF_PREFS.map(n=>`
+    <div class="switchrow"><span class="em">${n.em}</span>
+      <span class="tx">${n.label}<br><span class="sub">${n.sub}</span></span>
+      <label class="switch"><input type="checkbox" data-pref="${n.id}" ${prof.notifPrefs[n.id]!==false?"checked":""}><span class="slider"></span></label>
+    </div>`).join("");
+  rows.querySelectorAll("input[data-pref]").forEach(cb=>{
+    cb.onchange = ()=>{ prof.notifPrefs[cb.dataset.pref] = cb.checked; saveProfile(); refresh(true); toast(cb.checked?"🔔 Alerts on":"🔕 Alerts off"); };
+  });
+
+  // sources panel
+  const srcs = [
+    {em:"🌤️", nm:"Open-Meteo Forecast", ds:"Current · hourly · 7-day model data (temp, rain %, gusts, visibility, WMO codes)", st:SRC_STATUS["wx"]||"live"},
+    {em:"😷", nm:"Open-Meteo Air Quality", ds:"PM2.5 · PM10 · UV — combined into India-CPCB AQI with health recommendations", st:SRC_STATUS["aq"]||"live"},
+    {em:"📊", nm:"Open-Meteo Historical (ERA5)", ds:"30-day observed rainfall → wet-day base rate for the rain-risk model", st:SRC_STATUS["risk"]||"live"},
+    {em:"🏢", nm:"IMD API Platform", ds:"Current weather · district nowcast & warnings · rainfall · cyclone. Gateway calls attempted live; sample payloads are calibrated to today's data and clearly badged", st:SRC_STATUS["imd"]||"sample"},
+    {em:"🚨", nm:"NDMA SACHET (CAP)", ds:"Geo-targeted disaster alerts: thunderstorm, cyclone, flood, heat wave — CAP protocol feed", st:SRC_STATUS["sachet"]||"sample"},
+    {em:"📍", nm:"Location services", ds:"GPS · city/PIN search (Open-Meteo geocoding) · saved locations (Home / College / Family)", st:"live"},
+    {em:"🗓️", nm:"Schedule (demo)", ds:"User timetable merged with hour-by-hour forecast; Google Calendar / ERP sync on roadmap", st:"sample"},
+  ];
+  $("sourcesList").innerHTML = srcs.map(s=>`
+    <div class="src-row"><span class="em">${s.em}</span>
+      <span class="tx"><span class="nm">${s.nm}</span><span class="badge ${s.st==="live"?"live":"sample"}">${s.st==="live"?"● LIVE":"◆ SAMPLE"}</span>
+      <div class="ds">${s.ds}</div></span></div>`).join("");
+  $("pipeStamp").textContent = WX ? "refreshed "+new Date(WX.fetchedAt).toLocaleTimeString() : "";
+  $("pipeDiagram").textContent =
+`   ┌──────────────────┐  ┌──────────────────┐  ┌───────────────────┐
+   │   IMD Weather    │  │  NDMA SACHET CAP │  │ Open-Meteo WX/AQ  │
+   │ forecast·warnings│  │ disaster alerts  │  │ AQI · PM · archive│
+   └────────┬─────────┘  └────────┬─────────┘  └─────────┬─────────┘
+            └────────────┬────────┴──────────────────────┘
+                         ▼
+                ┌──────────────────┐
+                │  Data Processing │ AQI(CPCB) · UV windows ·
+                │                  │ rain-risk · WMO mapping
+                └────────┬─────────┘
+                         ▼
+                ┌──────────────────┐
+                │ Personalization  │ ← Location · Schedule ·
+                │     Engine       │   Preferences · Travel mode
+                └────────┬─────────┘
+                         ▼
+                ┌──────────────────┐
+                │   MAUSAM HOME    │ alerts · insights ·
+                │                  │ recommendations
+                └──────────────────┘`;
+}
+
+// ---------- Stale-data badge ----------
+const STALE_AFTER_MIN = 30;
+function updateStaleBadge(){
+  const ageMin = WX?.fetchedAt ? Math.round((Date.now()-WX.fetchedAt)/60000) : null;
+  $("staleSlot").innerHTML = (ageMin!=null && ageMin>=STALE_AFTER_MIN)
+    ? `<div class="stale-badge"><span>⏱ <b>Showing data from ${ageMin} min ago</b> — refresh for live conditions.</span><button id="staleRefresh">Refresh</button></div>`
+    : "";
+  const btn = $("staleRefresh");
+  if(btn) btn.onclick = ()=>refresh();
+}
+setInterval(()=>{ if(profile && WX) updateStaleBadge(); }, 60000);
+
+// ---------- Alert history (persisted) ----------
+function recordAlert(a){
+  if(!profile) return;
+  profile.alertHistory = profile.alertHistory || [];
+  const dayKey = new Date().toDateString();
+  const dup = profile.alertHistory.find(x=>x.src===a.src && x.title===a.title && x.loc===profile.city.name && new Date(x.at).toDateString()===dayKey);
+  if(dup) return; // same warning, same place, same day → keep one entry (and its acked state)
+  profile.alertHistory.unshift({
+    title:a.title, body:a.body, src:a.src, cat:a.cat||"severe", tone:a.tone||"warning",
+    icon:a.icon||"🔔", at:Date.now(), acked:false,
+    loc: profile.city.name,
+  });
+  if(profile.alertHistory.length > 40) profile.alertHistory.length = 40;
+  saveProfile();
+}
+function unackedCount(){ return (profile?.alertHistory||[]).filter(a=>!a.acked).length; }
+function updateHistoryBadge(){
+  const btn = $("historyBtn"); if(!btn) return;
+  btn.dataset.count = unackedCount();
+}
+function renderInbox(){
+  const list = $("inboxList");
+  const items = profile.alertHistory || [];
+  if(!items.length){
+    list.innerHTML = `<div class="inbox-item acked" style="cursor:default;"><span class="em">✅</span><span class="tx">
+      <span class="nm">No alerts recorded yet</span>
+      <div class="ds">When an official warning or threshold alert fires, it lands here with its source and reasoning.</div></span></div>`;
+    return;
+  }
+  list.innerHTML = items.map((a,i)=>`
+    <div class="inbox-item ${a.acked?"acked":""}" data-i="${i}">
+      <span class="em">${a.icon}</span>
+      <span class="tx">
+        <span class="nm">${a.title}</span>
+        <div class="ds">${(a.body||"").slice(0,120)}${(a.body||"").length>120?"…":""}</div>
+        <div class="when">${new Date(a.at).toLocaleString([], {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${a.src} · ${a.loc}</div>
+      </span>
+      <span class="ack" title="${a.acked?"Acknowledged":"New"}"></span>
+    </div>`).join("");
+  list.querySelectorAll(".inbox-item[data-i]").forEach(el=>{
+    el.onclick = ()=>{
+      const a = profile.alertHistory[+el.dataset.i];
+      a.acked = true; saveProfile(); updateHistoryBadge();
+      showWhy(a.title, a.body, a.reasons||["Source: "+a.src+" — full reasoning is rebuilt on each refresh from live data."], "Recorded for " + a.loc);
+      renderInbox();
+      $("inboxModal").classList.remove("open");
+    };
+  });
+}
+
+// ---------- Why modal ----------
+function showWhy(title, detail, reasons, context){
+  $("whyTitle").textContent = "Why am I seeing this?";
+  const body = $("whyBody");
+  let html = "";
+  if(detail) html += `<p style="font-size:14px; line-height:1.55; margin-top:10px; color:#d7dcf5;">${title}. ${detail}</p>`;
+  html += `<div class="why-data" style="margin-top:14px;"><b>Mausam pipeline</b><br>Weather / warning APIs → data processing → your location, schedule & preferences → this recommendation.</div>`;
+  if(reasons && reasons.length){
+    html += `<div style="margin-top:16px;">`;
+    reasons.forEach((r,i)=>{ html += `<div class="why-step"><div class="n">${i+1}</div><div class="tx">${r}</div></div>`; });
+    html += `</div>`;
+  }
+  if(context) html += `<p style="margin-top:16px; font-size:12px; color:var(--faint);">Applied to you: ${context}</p>`;
+  body.innerHTML = html;
+  $("whyModal").classList.add("open");
+}
+$("whyModal").addEventListener("click", e=>{ if(e.target.id==="whyModal") e.target.classList.remove("open"); });
+
+/* =====================================================================
+   ONBOARDING
+   ===================================================================== */
+const obSel = {
+  interests: new Set(profile?.interests || []),
+  mode: profile?.mode || null,
+  city: profile?.city || QUICK_CITIES[0],
+  savedSlots: {},
+};
+function buildOnboarding(){
+  $("interestGrid").innerHTML = INTERESTS.map(i=>
+    `<div class="interest ${obSel.interests.has(i.id)?"sel":""}" data-id="${i.id}">
+       <span class="em">${i.em}</span><span>${i.label}</span><span class="box"></span></div>`).join("");
+  document.querySelectorAll(".interest").forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.id;
+      obSel.interests.has(id) ? obSel.interests.delete(id) : obSel.interests.add(id);
+      el.classList.toggle("sel");
+      updateStart();
+    };
+  });
+  $("modeGrid").innerHTML = MODES.map(m=>
+    `<div class="mode ${obSel.mode===m.id?"sel":""}" data-id="${m.id}"><span class="em">${m.em}</span><span>${m.label}</span></div>`).join("");
+  document.querySelectorAll(".mode").forEach(el=>{
+    el.onclick = ()=>{
+      obSel.mode = el.dataset.id;
+      document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("sel", x===el));
+      updateStart();
+    };
+  });
+  updateStart();
+}
+function updateStart(){ $("startBtn").disabled = !(obSel.interests.size && obSel.mode && obSel.city); }
+function renderSaveSlots(){
+  const slots = $("saveSlots");
+  if(!profile){ slots.style.display = "flex"; }
+  document.querySelectorAll(".saveslot").forEach(el=>{
+    el.classList.toggle("saved", !!obSel.savedSlots[el.dataset.slot]);
+    el.onclick = ()=>{
+      const s = el.dataset.slot;
+      obSel.savedSlots[s] = !obSel.savedSlots[s];
+      el.classList.toggle("saved", !!obSel.savedSlots[s]);
+      toast(`“${obSel.city.name}” ${obSel.savedSlots[s]?"saved as":"removed from"} ${s}`);
+    };
+  });
+}
+function cityChipsFor(res, mount, onSelect, notice){
+  $(mount).innerHTML = res.length
+    ? res.map((c,i)=>`<button class="city-chip" data-i="${i}">${c.name}${c.admin1?", "+c.admin1:""} · ${c.country_code||""}${c.pin?" · PIN "+c.pin:""}</button>`).join("")
+    : `<span class="faint" style="font-size:12px; padding:6px;">${notice || "No matches — try a nearby city name"}</span>`;
+  $(mount).querySelectorAll(".city-chip").forEach(el=>{
+    el.onclick = ()=>{
+      const c = res[+el.dataset.i];
+      const pick = onSelect || ((cc)=>{ obSel.city = {name:cc.name, lat:cc.latitude, lon:cc.longitude}; toast("Location: "+cc.name); updateStart(); });
+      pick(c);
+    };
+  });
+}
+// India-Post PIN lookup (api.postalpincode.in, CORS-open) → district/state → coordinates
+async function pinLookup(pin){
+  const r = await fetchTimeout("https://api.postalpincode.in/pincode/"+pin, 7000);
+  const j = await r.json();
+  const rec = Array.isArray(j) ? j[0] : null;
+  if(!rec || rec.Status!=="Success" || !rec.PostOffice?.length){
+    return {ok:false, msg:`PIN ${pin} not found in the India-Post index — check the code`};
+  }
+  const offices = rec.PostOffice;
+  const district = offices[0].District, state = offices[0].State, block = offices[0].Block;
+  const tryGeo = async name => {
+    const r2 = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=en&format=json`);
+    const j2 = await r2.json();
+    return (j2.results||[]).filter(x=>x.country_code==="IN");
+  };
+  let cands = await tryGeo(district);
+  if(!cands.length) cands = await tryGeo(block);
+  if(!cands.length){
+    return {ok:false, msg:`PIN ${pin} = ${district}, ${state} — coordinates unavailable. Try searching “${district}”.`};
+  }
+  const match = cands.find(c=>c.admin1===state) || cands[0];
+  return {ok:true, result:{ name:district, admin1:state, country_code:"IN", lat:match.latitude, lon:match.longitude, pin,
+    detail: `${offices.length} post office${offices.length>1?"s":""} incl. ${offices[0].Name}` }};
+}
+
+// Unified location search: 6-digit input → India-Post PIN path, otherwise city geocoding
+async function searchLocation(q, mount, onSelect){
+  if(/^\d{6}$/.test(q)){
+    try{
+      const res = await pinLookup(q);
+      cityChipsFor(res.ok ? [res.result] : [], mount, onSelect, res.ok ? null : res.msg);
+    }catch(e){ cityChipsFor([], mount, onSelect, "India-Post lookup failed — check internet"); }
+    return;
+  }
+  try{
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=en&format=json`);
+    const j = await r.json();
+    cityChipsFor(j.results||[], mount, onSelect);
+  }catch(e){ cityChipsFor([], mount, onSelect, "Search failed — check internet"); }
+}
+let searchTimer=null;
+$("citySearch").addEventListener("input", e=>{
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  if(q.length<2){ $("cityChips").innerHTML=""; return; }
+  searchTimer = setTimeout(()=>searchLocation(q, "cityChips"), 350);
+});
+$("gpsBtn").onclick = ()=>{
+  if(!navigator.geolocation){ toast("GPS not available"); return; }
+  toast("Locating…");
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ obSel.city = {name:"My location", lat:+pos.coords.latitude.toFixed(4), lon:+pos.coords.longitude.toFixed(4)}; toast(`GPS: ${obSel.city.lat}°, ${obSel.city.lon}°`); updateStart(); },
+    ()=>toast("GPS permission denied"), {timeout:8000});
+};
+$("startBtn").onclick = ()=>{
+  const locations = Object.entries(obSel.savedSlots).filter(([,v])=>v).map(([slot])=>{
+    const d = DEMO_LOCATIONS.find(l=>l.name.toLowerCase().startsWith(slot.toLowerCase()));
+    return d ? {...d, city: obSel.city.name, lat: obSel.city.lat, lon: obSel.city.lon} : {name:slot, icon:"📍", city:obSel.city.name, lat:obSel.city.lat, lon:obSel.city.lon};
+  });
+  profile = {
+    city: obSel.city,
+    locations: locations.length ? locations : [{name:"Home", icon:"🏠", city:obSel.city.name, lat:obSel.city.lat, lon:obSel.city.lon}, ...DEMO_LOCATIONS.slice(1)],
+    interests: [...obSel.interests],
+    mode: obSel.mode,
+    notifPrefs: {...NOTIF_DEFAULTS},
+    schedule: JSON.parse(JSON.stringify(DEMO_SCHEDULE)),
+  };
+  saveProfile();
+  enterApp();
+};
+
+/* =====================================================================
+   APP FLOW / NAV
+   ===================================================================== */
+function showScreen(name){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $(name).classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.screen===name));
+  $("tabbar").style.display = name==="onboarding" ? "none" : "flex";
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tab").forEach(t=> t.onclick = ()=>showScreen(t.dataset.screen));
+
+function enterApp(){ showScreen("home"); refresh(); }
+
+async function refresh(silent){
+  if(fetching || !profile) return;
+  fetching = true;
+  $("staleSlot").innerHTML = "";
+  ["refreshBtn","refreshBtn2","refreshBtn3"].forEach(id=>{ const b=$(id); if(b) b.classList.add("spinning"); });
+  try{
+    // Fetch the primary forecast first, then derive signals from it so the
+    // IMD/SACHET sample payloads are calibrated to real conditions on every load.
+    const fc = await fetchWeather(profile.city);
+    const hours = fc.hourly?.time || [];
+    let ni = hours.findIndex(t=>t.slice(0,13)===String(fc.current.time).slice(0,13));
+    if(ni<0) ni = 0;
+    const todayHours = Array.from({length:24},(_,i)=>i).filter(i=>hours[i] && hours[i].slice(0,10)===hours[0].slice(0,10));
+    const mx = key => Math.max(...todayHours.map(i=>fc.hourly[key]?.[i]??0), 0);
+    const sig = {
+      maxRain: mx("precipitation_probability"),
+      maxGust: mx("wind_gusts_10m"),
+      maxHeat: mx("apparent_temperature"),
+      tstorm: todayHours.some(i=>(fc.hourly.weather_code?.[i]??0)>=95) || [95,96,99].includes(fc.current.weather_code),
+      tstormH: todayHours.reduce((b,i)=>((fc.hourly.precipitation_probability?.[i]??0)>(fc.hourly.precipitation_probability?.[b]??0)?i:b), todayHours[0]??ni),
+    };
+    const [aq, risk, imd, sachet] = await Promise.all([
+      fetchAir(profile.city),
+      WX?.risk && silent ? Promise.resolve(WX.risk) : fetchArchive(profile.city),
+      fetchIMD(profile.city, sig),
+      fetchSACHET(profile.city, sig),
+    ]);
+    SRC_STATUS["wx"]="live";
+    SRC_STATUS["aq"]= aq ? "live":"sample";
+    SRC_STATUS["risk"]= risk ? "live":"sample";
+    SRC_STATUS["imd"]= imd.live ? "live":"sample";
+    SRC_STATUS["sachet"]= sachet.live ? "live":"sample";
+    const processed = processAndPersonalize({fc, aq, imd, sachet, risk}, profile);
+    processed.fetchedAt = Date.now();
+    processed.prevAlertTitle = WX?.alert?.title ?? null;
+    WX = processed;
+    renderHome(WX, profile);
+    renderSchedule(WX);
+    renderForecast(WX);
+    renderSettings(WX, profile);
+    $("locName").textContent = "📍 " + profile.city.name;
+  }catch(err){
+    console.error(err);
+    $("staleSlot").innerHTML = `<div class="error-card">
+      <div style="font-size:15px;font-weight:800;">Couldn't reach the weather pipeline</div>
+      <p class="muted" style="font-size:12.5px;margin-top:6px;">Live sources are unreachable right now. Check the connection and retry — your profile and alert history are safe on this device.</p>
+      <button class="mini-cta" id="retryBtn" style="margin-top:12px;">⟳ Retry now</button></div>`;
+    $("retryBtn").onclick = ()=>refresh();
+  }finally{
+    fetching = false;
+    ["refreshBtn","refreshBtn2","refreshBtn3"].forEach(id=>{ const b=$(id); if(b) b.classList.remove("spinning"); });
+  }
+}
+$("refreshBtn").onclick = ()=>refresh();
+$("refreshBtn2").onclick = ()=>refresh();
+$("refreshBtn3").onclick = ()=>refresh();
+$("profileBtn").onclick = ()=>showScreen("settings");
+
+// alert history inbox
+$("historyBtn").onclick = ()=>{ renderInbox(); $("inboxModal").classList.add("open"); };
+$("inboxModal").addEventListener("click", e=>{ if(e.target.id==="inboxModal") e.target.classList.remove("open"); });
+
+// location switcher modal
+$("locBtn").onclick = ()=>{ renderLocList(); $("locModal").classList.add("open"); };
+$("locModal").addEventListener("click", e=>{ if(e.target.id==="locModal") e.target.classList.remove("open"); });
+function renderLocList(){
+  const list = $("locList");
+  list.innerHTML = profile.locations.map((l,i)=>`
+    <div class="loc-item" data-i="${i}">
+      <span class="em">${l.icon||"📍"}</span>
+      <span class="tx"><span class="nm">${l.name}</span><br><span class="sub">${l.city}${/college|svnit/i.test(l.name)?" · SVNIT campus":""}${l.name==="Family — Yanbu"?" · Saudi Arabia":""}</span></span>
+      ${profile.city.name===l.city && Math.abs(profile.city.lat-l.lat)<0.002 ? '<span class="cur">● CURRENT</span>':""}
+    </div>`).join("");
+  list.querySelectorAll(".loc-item").forEach(el=>{
+    el.onclick = ()=>{
+      const l = profile.locations[+el.dataset.i];
+      profile.city = {name:l.city, lat:l.lat, lon:l.lon};
+      saveProfile();
+      $("locModal").classList.remove("open");
+      WX = null;
+      refresh();
+      toast("Switched to "+l.name);
+    };
+  });
+}
+let locSearchTimer=null;
+$("locSearchInput").addEventListener("input", e=>{
+  clearTimeout(locSearchTimer);
+  const q = e.target.value.trim();
+  if(q.length<2){ $("locSearchChips").innerHTML=""; return; }
+  locSearchTimer = setTimeout(()=>searchLocation(q, "locSearchChips", (c)=>{
+    profile.city = {name:c.name, lat:c.latitude, lon:c.longitude};
+    profile.locations = profile.locations.filter(l=>l.name!==c.name);
+    profile.locations.push({name:"Added location", icon:"📍", city:c.name, lat:c.latitude, lon:c.longitude});
+    saveProfile();
+    renderLocList();
+    $("locName").textContent = "📍 "+c.name;
+    WX = null; refresh();
+    toast("Switched to "+c.name);
+  }), 350);
+});
+$("locGpsBtn").onclick = ()=>{
+  if(!navigator.geolocation){ toast("GPS not available"); return; }
+  toast("Locating…");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    profile.city = {name:"My location", lat:+pos.coords.latitude.toFixed(4), lon:+pos.coords.longitude.toFixed(4)};
+    profile.locations.push({name:"Current GPS", icon:"🎯", city:profile.city.name, lat:profile.city.lat, lon:profile.city.lon});
+    saveProfile(); $("locModal").classList.remove("open"); WX=null; refresh();
+  }, ()=>toast("GPS permission denied"), {timeout:8000});
+};
+
+// settings shortcuts
+$("setLoc").onclick = ()=>$("locBtn").onclick();
+$("setInterests").onclick = $("setMode").onclick = $("setSched").onclick = ()=>showScreen("schedule");
+$("redoOnboard").onclick = ()=>{ toast("Current picks are pre-selected — adjust and restart"); showScreen("onboarding"); };
+
+// schedule add form
+{
+  const sel = $("evTime");
+  for(let h=6; h<=22; h++){ const o=document.createElement("option"); o.value=h; o.textContent=hrShort(h); sel.appendChild(o); }
+}
+$("evAdd").onclick = ()=>{
+  const t = +$("evTime").value || 12;
+  const title = $("evTitle").value.trim() || "Untitled event";
+  const type = $("evType").value;
+  if(profile.schedule.some(e=>e.t===t)){ toast("An event already exists at "+hrShort(t)); return; }
+  profile.schedule.push({t, title, type});
+  saveProfile();
+  $("evTitle").value = "";
+  refresh(true);
+  toast("Added “"+title+"” — check Your day");
+};
+
+// metric cards → explanations
+const METRIC_WHY = {
+  "m-rain": ()=>["Current rain probability comes from the hourly precipitation model for this hour.","If it crosses 70% in the next hours, Mausam raises a Weather Alert (unless you turned rain alerts off in preferences)."],
+  "m-uv": ()=>["UV index is retrieved from the air-quality satellite model (hourly forecast fallback).","UV 6–7 = High, 8–10 = Very High. Above 6, sunscreen advice appears for Outdoor/Health profiles, and outdoor schedule events get sun-protection notes."],
+  "m-aqi": ()=>["AQI is computed from PM2.5/PM10 using India's CPCB breakpoint method (falls back to US AQI if pollutant data is missing).","AQI ≥ 100 triggers health insights; ≥ 250 triggers an alert (gated by your Air-quality notification preference)."],
+  "m-pm": ()=>["PM2.5 (fine particles) and PM10 (coarse particles) in µg/m³, from the CAMS air-quality model refreshed hourly.","PM2.5 is the primary driver of India's CPCB AQI — that's why both are shown."],
+  "m-hum": ()=>["Relative humidity at 2 m height, from the weather model.","Combined with temperature it produces the 'feels-like' value used in heat insights."],
+  "m-wind": ()=>["Wind speed at 10 m height, hourly model data.","Gusts above 30 km/h generate cyclist warnings; above 50 km/h, a wind alert."],
+};
+Object.keys(METRIC_WHY).forEach(id=>{
+  $(id).onclick = ()=>{
+    const key = id.replace("m-","");
+    showWhy(key.toUpperCase()+" — "+$("v-"+key).textContent, "", METRIC_WHY[id](), "Live Open-Meteo data");
+  };
+});
+
+// ---------- Boot ----------
+buildOnboarding();
+renderSaveSlots();
+if(profile) enterApp();
+</script>
+</body>
+</html>
